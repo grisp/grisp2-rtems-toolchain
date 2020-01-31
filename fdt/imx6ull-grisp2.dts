@@ -1,55 +1,150 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: (GPL-2.0+ OR BSD-2-Clause)
 /*
- * Copyright (C) 2016 PHYTEC Messtechnik GmbH
- * Author: Christian Hemp <c.hemp@phytec.de>
+ * Copyright (C) 2020 embedded brains GmbH.
  */
 
+#define GRISP_IMX6ULL_Y0
+
 /dts-v1/;
-#include "imx6ul-phytec-pcl063.dtsi"
-#include "imx6ul-phytec-phyboard-segin.dtsi"
+#include "imx6ull.dtsi"
+#include "imx6ull-phytec-phycore-som.dtsi"
 
 / {
 	model = "GRiSP2";
 	compatible = "embeddedbrains,grisp2", "phytec,imx6ul-pbacd-10", "phytec,imx6ul-pcl063", "fsl,imx6ul";
 
 	aliases {
+#ifdef GRISP_IMX6ULL_Y0
 		/delete-property/ serial4;
 		/delete-property/ serial5;
 		/delete-property/ serial6;
 		/delete-property/ serial7;
+#endif /* GRISP_IMX6ULL_Y0 */
 	};
 };
 
+#ifdef GRISP_IMX6ULL_Y0
 /delete-node/ &uart5;
 /delete-node/ &uart6;
 /delete-node/ &uart7;
 /delete-node/ &uart8;
+#endif /* GRISP_IMX6ULL_Y0 */
 
 &fec2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enet2>;
+	phy-mode = "rmii";
+	phy-handle = <&ethphy2>;
 	status = "okay";
 };
 
-&uart4 {
-	status = "okay";
+&i2c1 {
+	ds2482s: onewire_master@18 {
+		compatible = "maxim,ds2482s";
+		reg = <0x18>;
+	};
+	at24mac402_eeprom: eeprom@57 {
+		compatible = "atmel,24c02";
+		reg = <0x57>;
+	};
+	at24mac402_eui: eeprom@5f {
+		compatible = "atmel,at24mac402-eui";
+		reg = <0x5f>;
+	};
+	atecc508a: cryptoauth@60 {
+		compatible = "microchip,atecc508a", "atmel,at24c16";
+		reg = <0x60>;
+	};
+};
+
+&mdio {
+	ethphy2: ethernet-phy@2 {
+		reg = <2>;
+		micrel,led-mode = <1>;
+		clocks = <&clks IMX6UL_CLK_ENET2_REF>;
+		clock-names = "rmii-ref";
+		status = "okay";
+	};
 };
 
 &usbotg1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usb_otg1_id>;
+	dr_mode = "otg";
 	status = "okay";
 };
 
+#ifndef GRISP_IMX6ULL_Y0
 &usbotg2 {
+	dr_mode = "host";
+	disable-over-current;
 	status = "okay";
 };
+#endif /* GRISP_IMX6ULL_Y0 */
 
 &usdhc1 {
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc1>;
+	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
+	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
+	cd-gpios = <&gpio1 19 GPIO_ACTIVE_LOW>;
+	no-1-8-v;
+	keep-power-in-suspend;
+	wakeup-source;
 	status = "okay";
 };
 
 &iomuxc {
-	pinctrl_uart4: uart4grp {
+	pinctrl_enet2: enet2grp {
 		fsl,pins = <
-			MX6UL_PAD_LCD_ENABLE__UART4_DCE_RX	0x1b0b1
-			MX6UL_PAD_LCD_CLK__UART4_DCE_TX		0x1b0b1
+			MX6UL_PAD_ENET2_RX_EN__ENET2_RX_EN	0x1b0b0
+			MX6UL_PAD_ENET2_RX_ER__ENET2_RX_ER	0x1b0b0
+			MX6UL_PAD_ENET2_RX_DATA0__ENET2_RDATA00	0x1b0b0
+			MX6UL_PAD_ENET2_RX_DATA1__ENET2_RDATA01	0x1b0b0
+			MX6UL_PAD_ENET2_TX_EN__ENET2_TX_EN	0x1b010
+			MX6UL_PAD_ENET2_TX_DATA0__ENET2_TDATA00	0x1b010
+			MX6UL_PAD_ENET2_TX_DATA1__ENET2_TDATA01	0x1b010
+			MX6UL_PAD_ENET2_TX_CLK__ENET2_REF_CLK2	0x4001b010
+		>;
+	};
+
+	pinctrl_usb_otg1_id: usbotg1idgrp {
+		fsl,pins = <
+			MX6UL_PAD_GPIO1_IO00__ANATOP_OTG1_ID	0x17059
+		>;
+	};
+
+	pinctrl_usdhc1: usdhc1grp {
+		fsl,pins = <
+			MX6UL_PAD_SD1_CMD__USDHC1_CMD		0x17059
+			MX6UL_PAD_SD1_CLK__USDHC1_CLK		0x10059
+			MX6UL_PAD_SD1_DATA0__USDHC1_DATA0	0x17059
+			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1	0x17059
+			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2	0x17059
+			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3	0x17059
+			MX6UL_PAD_UART1_RTS_B__GPIO1_IO19	0x17059
+		>;
+	};
+
+	pinctrl_usdhc1_100mhz: usdhc1grp100mhz {
+		fsl,pins = <
+			MX6UL_PAD_SD1_CMD__USDHC1_CMD		0x170b9
+			MX6UL_PAD_SD1_CLK__USDHC1_CLK		0x100b9
+			MX6UL_PAD_SD1_DATA0__USDHC1_DATA0	0x170b9
+			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1	0x170b9
+			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2	0x170b9
+			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3	0x170b9
+		>;
+	};
+
+	pinctrl_usdhc1_200mhz: usdhc1grp200mhz {
+		fsl,pins = <
+			MX6UL_PAD_SD1_CMD__USDHC1_CMD		0x170f9
+			MX6UL_PAD_SD1_CLK__USDHC1_CLK		0x100f9
+			MX6UL_PAD_SD1_DATA0__USDHC1_DATA0	0x170f9
+			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1	0x170f9
+			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2	0x170f9
+			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3	0x170f9
 		>;
 	};
 };
