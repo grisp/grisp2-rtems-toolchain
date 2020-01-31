@@ -7,6 +7,7 @@ PREFIX = $(MAKEFILE_DIR)/rtems/5
 RSB = $(MAKEFILE_DIR)/external/rtems-source-builder
 SRC_LIBBSD = $(MAKEFILE_DIR)/external/rtems-libbsd
 SRC_RTEMS = $(MAKEFILE_DIR)/external/rtems
+SRC_LIBGRISP = $(MAKEFILE_DIR)/external/libgrisp
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 
 .PHONY: fdt
@@ -14,9 +15,9 @@ BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 export PATH := $(PREFIX)/bin:$(PATH)
 
 help:
-	echo "Use 'make all' to build complete toolchain and libraries."
+	echo "Use 'make install' to build complete toolchain and libraries."
 
-all: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk
+install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp
 
 submodule-update:
 	git submodule update --init
@@ -61,6 +62,9 @@ libbsd:
 	    --optimization=2
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
+
+libgrisp:
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBGRISP) install
 
 fdt:
 	make PREFIX=$(PREFIX) -C fdt clean all
