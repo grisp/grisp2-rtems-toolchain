@@ -1,0 +1,12 @@
+[submodule "rtems-source-builder"]
+	path = external/rtems-source-builder
+	url = git://git.rtems.org/rtems-source-builder.git
+	branch = master
+[submodule "rtems"]
+	path = external/rtems
+	url = git@main.eb.localhost:eb/101-embedded-brains/oss/rtems.git
+	branch = imx6-phytec
+[submodule "rtems-libbsd"]
+	path = external/rtems-libbsd
+	url = git@main.eb.localhost:eb/101-embedded-brains/oss/rtems-libbsd.git
+	branch = imx6-phytec
