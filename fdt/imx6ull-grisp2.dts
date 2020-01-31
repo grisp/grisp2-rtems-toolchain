@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2016 PHYTEC Messtechnik GmbH
+ * Author: Christian Hemp <c.hemp@phytec.de>
+ */
+
+/dts-v1/;
+#include "imx6ul-phytec-pcl063.dtsi"
+#include "imx6ul-phytec-phyboard-segin.dtsi"
+
+/ {
+	model = "GRiSP2";
+	compatible = "embeddedbrains,grisp2", "phytec,imx6ul-pbacd-10", "phytec,imx6ul-pcl063", "fsl,imx6ul";
+
+	aliases {
+		/delete-property/ serial4;
+		/delete-property/ serial5;
+		/delete-property/ serial6;
+		/delete-property/ serial7;
+	};
+};
+
+/delete-node/ &uart5;
+/delete-node/ &uart6;
+/delete-node/ &uart7;
+/delete-node/ &uart8;
+
+&fec2 {
+	status = "okay";
+};
+
+&uart4 {
+	status = "okay";
+};
+
+&usbotg1 {
+	status = "okay";
+};
+
+&usbotg2 {
+	status = "okay";
+};
+
+&usdhc1 {
+	status = "okay";
+};
+
+&iomuxc {
+	pinctrl_uart4: uart4grp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_ENABLE__UART4_DCE_RX	0x1b0b1
+			MX6UL_PAD_LCD_CLK__UART4_DCE_TX		0x1b0b1
+		>;
+	};
+};

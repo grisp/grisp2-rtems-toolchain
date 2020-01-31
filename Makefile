@@ -1,16 +1,19 @@
+# Note: $(PWD) doesn't work together with -C option of make.
+MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+
 ARCH = arm
 BSP = imx7
-PREFIX = $(PWD)/rtems/5
-RSB = $(PWD)/external/rtems-source-builder
-SRC_LIBBSD = $(PWD)/external/rtems-libbsd
-SRC_RTEMS = $(PWD)/external/rtems
-BUILD_BSP = $(PWD)/build/b-$(BSP)
+PREFIX = $(MAKEFILE_DIR)/rtems/5
+RSB = $(MAKEFILE_DIR)/external/rtems-source-builder
+SRC_LIBBSD = $(MAKEFILE_DIR)/external/rtems-libbsd
+SRC_RTEMS = $(MAKEFILE_DIR)/external/rtems
+BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
+
+.PHONY: fdt
 
 export PATH := $(PREFIX)/bin:$(PATH)
 
-.PHONY: libbsd
-
-all: submodule-update toolchain bootstrap bsp libbsd
+all: submodule-update toolchain bootstrap bsp libbsd fdt
 
 submodule-update:
 	git submodule update --init
@@ -47,3 +50,6 @@ libbsd:
 	    --optimization=2
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
+
+fdt:
+	make PREFIX=$(PREFIX) -C fdt clean all
