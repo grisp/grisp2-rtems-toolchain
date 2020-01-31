@@ -45,11 +45,11 @@ bsp:
 	cd $(BUILD_BSP) && make -j `nproc` install
 
 bsp.mk: $(PREFIX)/make/custom/$(BSP).mk
-$(PREFIX)/make/custom/$(BSP).mk: install/bsp.mk
+$(PREFIX)/make/custom/$(BSP).mk: src/bsp.mk
 	cat $^ | sed \
-	    -e "s/##RTEMS_API##/$RTEMS_VERSION/g" \
-	    -e "s/##RTEMS_BSP##/$BSP_NAME/g" \
-	    -e "s/##RTEMS_CPU##/$RTEMS_CPU/g" \
+	    -e "s/##RTEMS_API##/5/g" \
+	    -e "s/##RTEMS_BSP##/$(BSP)/g" \
+	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
 	    > $@
 
 libbsd:
