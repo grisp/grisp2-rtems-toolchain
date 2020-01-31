@@ -13,6 +13,9 @@ BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 
 export PATH := $(PREFIX)/bin:$(PATH)
 
+help:
+	echo "Use 'make all' to build complete toolchain and libraries."
+
 all: submodule-update toolchain bootstrap bsp libbsd fdt
 
 submodule-update:
