@@ -16,7 +16,7 @@ export PATH := $(PREFIX)/bin:$(PATH)
 help:
 	echo "Use 'make all' to build complete toolchain and libraries."
 
-all: submodule-update toolchain bootstrap bsp libbsd fdt
+all: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk
 
 submodule-update:
 	git submodule update --init
@@ -43,6 +43,14 @@ bsp:
 	    --disable-networking
 	cd $(BUILD_BSP) && make -j `nproc`
 	cd $(BUILD_BSP) && make -j `nproc` install
+
+bsp.mk: $(PREFIX)/make/custom/$(BSP).mk
+$(PREFIX)/make/custom/$(BSP).mk: install/bsp.mk
+	cat $^ | sed \
+	    -e "s/##RTEMS_API##/$RTEMS_VERSION/g" \
+	    -e "s/##RTEMS_BSP##/$BSP_NAME/g" \
+	    -e "s/##RTEMS_CPU##/$RTEMS_CPU/g" \
+	    > $@
 
 libbsd:
 	rm -rf $(SRC_LIBBSD)/build
