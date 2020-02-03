@@ -9,6 +9,7 @@ SRC_LIBBSD = $(MAKEFILE_DIR)/external/rtems-libbsd
 SRC_RTEMS = $(MAKEFILE_DIR)/external/rtems
 SRC_LIBGRISP = $(MAKEFILE_DIR)/external/libgrisp
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
+LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 
 .PHONY: fdt
 
@@ -59,7 +60,8 @@ libbsd:
 	    --prefix=$(PREFIX) \
 	    --rtems-bsps=$(ARCH)/$(BSP) \
 	    --enable-warnings \
-	    --optimization=2
+	    --optimization=2 \
+	    --buildset=$(LIBBSD_BUILDSET)
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
 
