@@ -68,3 +68,12 @@ libgrisp:
 
 fdt:
 	make PREFIX=$(PREFIX) -C fdt clean all
+
+demo:
+	make -C demo
+
+demo-clean:
+	make -C demo clean
+
+shell:
+	$(SHELL)
