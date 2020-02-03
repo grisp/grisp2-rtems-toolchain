@@ -42,18 +42,22 @@
 	ds2482s: onewire_master@18 {
 		compatible = "maxim,ds2482s";
 		reg = <0x18>;
+		status = "okay";
 	};
 	at24mac402_eeprom: eeprom@57 {
 		compatible = "atmel,24c02";
 		reg = <0x57>;
+		status = "okay";
 	};
 	at24mac402_eui: eeprom@5f {
 		compatible = "atmel,at24mac402-eui";
 		reg = <0x5f>;
+		status = "okay";
 	};
 	atecc508a: cryptoauth@60 {
 		compatible = "microchip,atecc508a", "atmel,at24c16";
 		reg = <0x60>;
+		status = "okay";
 	};
 };
 
@@ -145,6 +149,16 @@
 			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1	0x170f9
 			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2	0x170f9
 			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3	0x170f9
+		>;
+	};
+
+	/delete-node/ gpioledssomgrp;
+};
+
+&iomuxc_snvs {
+	pinctrl_gpioleds_som: gpioledssomgrp {
+		fsl,pins = <
+			MX6ULL_PAD_SNVS_TAMPER4__GPIO5_IO04	0x0b0b0
 		>;
 	};
 };
