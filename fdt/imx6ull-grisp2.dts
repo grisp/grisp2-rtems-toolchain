@@ -84,6 +84,10 @@
 	disable-over-current;
 	status = "okay";
 };
+#else
+&usbotg2 {
+	status = "disabled";
+};
 #endif /* GRISP_IMX6ULL_Y0 */
 
 &usdhc1 {
