@@ -1,0 +1,40 @@
+&HOME=os.env("HOME")
+&BSP="imx7"
+
+&APPLICATION_FILE="../demo/b-&BSP/demo.exe"
+
+global &initialized
+
+if "&initialized"==""
+(
+	&initialized="1"
+	;task.config ~~/demo/arm/kernel/rtems/rtems
+	;menu.reprogram ~~/demo/arm/kernel/rtems/rtems
+
+	RESet
+	SYStem.RESet
+	SYStem.CPU IMX6ULTRALITE
+	SYStem.Option ResBreak OFF
+	SYStem.Option WaitReset 10ms
+	SYStem.JtagClock CTCK 10MHz
+
+	do win
+)
+
+break.IMPLEMENTATION PROGRAM ONCHIP     ;Use Onchip breakpoints by default
+sys.mode down
+sys.resetout
+wait 1s
+sys.mode attach
+break.direct
+break 0x82000000
+break 0x80200000
+go.direct
+wait !run()
+
+data.load "&APPLICATION_FILE"
+sYmbol.NEW.FUNCTION _CPU_Context_switch y.begin(_CPU_Context_switch)--y.begin(_CPU_Context_restore)
+
+break.set _Terminate
+
+enddo
