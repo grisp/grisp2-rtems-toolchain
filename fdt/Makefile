@@ -19,7 +19,7 @@ $(BUILDDIR):
 	mkdir $(BUILDDIR)
 
 $(DTB): $(BOARD).dts $(BUILDDIR)
-	$(FDT_SCRIPTS)/make_dtb.sh $(FDT_SYS) $< $(BUILDDIR)
+	sh -x $(FDT_SCRIPTS)/make_dtb.sh $(FDT_SYS) $< $(BUILDDIR)
 
 clean:
 	rm -rf $(BUILDDIR)
