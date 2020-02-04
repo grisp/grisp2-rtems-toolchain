@@ -2,3 +2,4 @@
 /fdt/b-dtb
 /rtems/5
 build
+/demo*/b-*/
