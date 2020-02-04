@@ -11,7 +11,7 @@ APP_PIECES = $(wildcard *.c)
 APP_OBJS = $(APP_PIECES:%.c=$(BUILDDIR)/%.o)
 APP_DEPS = $(APP_PIECES:%.c=$(BUILDDIR)/%.d)
 
-all: $(BUILDDIR) $(APP).exe
+all: $(BUILDDIR) $(APP).exe $(APP).zImage
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
