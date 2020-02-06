@@ -36,10 +36,10 @@
 #endif /* GRISP_IMX6ULL_Y0 */
 
 &fec1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_enet1>;
-	phy-mode = "rmii";
-	phy-handle = <&ethphy1>;
+	status = "okay";
+};
+
+&ethphy1 {
 	status = "okay";
 };
 
