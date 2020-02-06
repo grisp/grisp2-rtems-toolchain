@@ -92,10 +92,8 @@
 #endif /* GRISP_IMX6ULL_Y0 */
 
 &usdhc1 {
-	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc1>;
-	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
-	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
 	cd-gpios = <&gpio1 19 GPIO_ACTIVE_LOW>;
 	no-1-8-v;
 	keep-power-in-suspend;
@@ -103,20 +101,19 @@
 	status = "okay";
 };
 
-&iomuxc {
-	pinctrl_enet2: enet2grp {
-		fsl,pins = <
-			MX6UL_PAD_ENET2_RX_EN__ENET2_RX_EN	0x1b0b0
-			MX6UL_PAD_ENET2_RX_ER__ENET2_RX_ER	0x1b0b0
-			MX6UL_PAD_ENET2_RX_DATA0__ENET2_RDATA00	0x1b0b0
-			MX6UL_PAD_ENET2_RX_DATA1__ENET2_RDATA01	0x1b0b0
-			MX6UL_PAD_ENET2_TX_EN__ENET2_TX_EN	0x1b010
-			MX6UL_PAD_ENET2_TX_DATA0__ENET2_TDATA00	0x1b010
-			MX6UL_PAD_ENET2_TX_DATA1__ENET2_TDATA01	0x1b010
-			MX6UL_PAD_ENET2_TX_CLK__ENET2_REF_CLK2	0x4001b010
-		>;
-	};
+&usdhc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2_grisp>;
+	bus-width = <8>;
+	max-frequency = <50000000>;
+	no-1-8-v;
+	non-removable;
+	wakeup-source;
+	cap-mmc-hw-reset;
+	status = "okay";
+};
 
+&iomuxc {
 	pinctrl_usb_otg1_id: usbotg1idgrp {
 		fsl,pins = <
 			MX6UL_PAD_GPIO1_IO00__ANATOP_OTG1_ID	0x17059
@@ -135,25 +132,21 @@
 		>;
 	};
 
-	pinctrl_usdhc1_100mhz: usdhc1grp100mhz {
-		fsl,pins = <
-			MX6UL_PAD_SD1_CMD__USDHC1_CMD		0x170b9
-			MX6UL_PAD_SD1_CLK__USDHC1_CLK		0x100b9
-			MX6UL_PAD_SD1_DATA0__USDHC1_DATA0	0x170b9
-			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1	0x170b9
-			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2	0x170b9
-			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3	0x170b9
-		>;
-	};
+	/delete-node/ pinctrl_usdhc2;
 
-	pinctrl_usdhc1_200mhz: usdhc1grp200mhz {
+	pinctrl_usdhc2_grisp: usdhc2-grp {
 		fsl,pins = <
-			MX6UL_PAD_SD1_CMD__USDHC1_CMD		0x170f9
-			MX6UL_PAD_SD1_CLK__USDHC1_CLK		0x100f9
-			MX6UL_PAD_SD1_DATA0__USDHC1_DATA0	0x170f9
-			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1	0x170f9
-			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2	0x170f9
-			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3	0x170f9
+			MX6UL_PAD_LCD_DATA13__USDHC2_RESET_B	0x17059
+			MX6UL_PAD_LCD_DATA18__USDHC2_CMD	0x17059
+			MX6UL_PAD_LCD_DATA19__USDHC2_CLK	0x17059
+			MX6UL_PAD_LCD_DATA20__USDHC2_DATA0	0x17059
+			MX6UL_PAD_LCD_DATA21__USDHC2_DATA1	0x17059
+			MX6UL_PAD_LCD_DATA22__USDHC2_DATA2	0x17059
+			MX6UL_PAD_LCD_DATA23__USDHC2_DATA3	0x17059
+			MX6UL_PAD_LCD_DATA14__USDHC2_DATA4	0x17059
+			MX6UL_PAD_LCD_DATA15__USDHC2_DATA5	0x17059
+			MX6UL_PAD_LCD_DATA16__USDHC2_DATA6	0x17059
+			MX6UL_PAD_LCD_DATA17__USDHC2_DATA7	0x17059
 		>;
 	};
 
