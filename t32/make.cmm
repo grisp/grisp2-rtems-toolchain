@@ -16,7 +16,7 @@ if "&initialized"==""
 	SYStem.CPU IMX6ULTRALITE
 	SYStem.Option ResBreak OFF
 	SYStem.Option WaitReset 10ms
-	SYStem.JtagClock CTCK 10MHz
+	SYStem.JtagClock CTCK 22MHz
 
 	do win
 )
