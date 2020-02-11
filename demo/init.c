@@ -30,6 +30,7 @@
  */
 
 #include <assert.h>
+#include <err.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -170,6 +171,92 @@ rtems_shell_cmd_t rtems_shell_STARTFTP_Command = {
 	0, 0, 0
 };
 
+static int
+command_write_stuff(int argc, char *argv[])
+{
+	int fd;
+	int32_t max_signed;
+	ssize_t block_size_signed;
+	uint32_t max;
+	size_t block_size;
+	uint32_t *block;
+	size_t blocks_to_write;
+	uint32_t current;
+	ssize_t written;
+
+	(void) argc;
+	(void) argv;
+
+	if (argc != 4) {
+		printf("Use with %s <file> <final_value> <block_size>\n"
+		    "    block_size is in dwords (4 bytes)\n",
+		    argv[0]);
+		return -1;
+	}
+
+	max_signed = strtol(argv[2], NULL, 0);
+	if (max_signed <= 0) {
+		warn("Couldn't convert final_value to int or final_value set to <= 0");
+		return -1;
+	}
+	max = (uint32_t) max_signed;
+
+	block_size_signed = strtol(argv[2], NULL, 0);
+	if (block_size_signed <= 0) {
+		warn("Couldn't convert block_size to int or block_size set to <= 0");
+		return -1;
+	}
+	block_size = (size_t) block_size_signed;
+
+	blocks_to_write = max / block_size;
+	if (max != blocks_to_write * block_size) {
+		max = blocks_to_write * block_size;
+		warnx("max doesn't match block size. Round to new max = %x.", max);
+	}
+
+	block = malloc(block_size * sizeof(block[0]));
+	if (block == NULL) {
+		warn("Couldn't allocate block");
+	}
+
+	fd = open(argv[1], O_WRONLY | O_CREAT);
+	if (fd < 0) {
+		warn("Couldn't open file");
+		free(block);
+		return -1;
+	}
+
+	current = 0;
+	for (uint32_t b = 0; b < blocks_to_write; ++b) {
+		for (uint32_t i = 0; i < block_size; ++i) {
+			block[i] = current;
+			++current;
+		}
+		written = write(fd, block, block_size * sizeof(block[0]));
+		if (written != (ssize_t)(block_size * sizeof(block[0]))) {
+			warn("Writing failed on block %d", b);
+			break;
+		}
+	}
+
+	free(block);
+	close(fd);
+
+	return 0;
+}
+
+rtems_shell_cmd_t rtems_shell_WRITE_STUFF_Command = {
+	.name = "write_stuff",
+	.usage = "DESTRUCTIVE! Use: write_stuff <file> <final_value> <block_size>",
+	.topic = "misc",
+	.command = command_write_stuff,
+	.alias = NULL,
+	.next = NULL,
+	.mode = 0,
+	.uid = 0,
+	.gid = 0,
+};
+
 static void
 Init(rtems_task_argument arg)
 {
@@ -191,11 +278,12 @@ Init(rtems_task_argument arg)
 		grisp_led_set1(true, false, false);
 	}
 
+	sleep(1);
 	grisp_init_dhcpcd(PRIO_DHCP);
 
-	grisp_led_set2(false, false, true);
-	create_wlandev();
-	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA);
+	//grisp_led_set2(false, false, true);
+	//create_wlandev();
+	//grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA);
 
 	init_led();
 	start_shell();
@@ -270,7 +358,8 @@ Init(rtems_task_argument arg)
   &rtems_shell_STARTFTP_Command, \
   &rtems_shell_BLKSTATS_Command, \
   &rtems_shell_WPA_SUPPLICANT_Command, \
-  &rtems_shell_WPA_SUPPLICANT_FORK_Command
+  &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
+  &rtems_shell_WRITE_STUFF_Command
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 
