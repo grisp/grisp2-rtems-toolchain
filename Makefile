@@ -11,7 +11,7 @@ SRC_LIBGRISP = $(MAKEFILE_DIR)/external/libgrisp
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 
-.PHONY: fdt
+.PHONY: fdt demo demo-clean
 
 export PATH := $(PREFIX)/bin:$(PATH)
 
