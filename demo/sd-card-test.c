@@ -150,7 +150,7 @@ command_pattern_fill(int argc, char *argv[])
 	uint8_t *block;
 	int rv;
 
-	rv = check_and_process_params(argc, argv, O_WRONLY | O_CREAT | O_TRUNC,
+	rv = check_and_process_params(argc, argv, O_WRONLY | O_CREAT,
 	    &fd, &size, &block_size, &block, NULL);
 	if (rv != 0) {
 		warnx("Error while processing parameters.\n");
