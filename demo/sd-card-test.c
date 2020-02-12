@@ -32,6 +32,7 @@
 #include <arpa/inet.h>
 #include <err.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,14 +51,36 @@ check_and_process_params(
 	size_t *size,
 	size_t *block_size,
 	uint8_t **block,
-	uint8_t **read_block
+	uint8_t **read_block,
+	int *max_errors,
+	bool *short_output
 )
 {
-	if (argc != 4) {
-		printf("Use with %s <file> <size> <block_size>\n"
-		    "    <size> and <block_size> is in bytes\n",
+	if (argc < 4) {
+		printf("Use with %s <file> <size> <block_size> [<output>]\n"
+		    "    <size> and <block_size> is in bytes\n"
+		    "    <output>: Only relevant for check. Can be: \n"
+		    "              <nr>: print the first <nr> errors\n"
+		    "              \"short\n: Print all errors but short form\n",
 		    argv[0]);
 		return -1;
+	}
+
+	if (short_output != NULL && max_errors != NULL) {
+		*short_output = false;
+		*max_errors = 1;
+		if (argc > 4) {
+			if (strcmp("short", argv[4]) == 0) {
+				*max_errors = -1;
+				*short_output = true;
+			} else {
+				*max_errors = strtol(argv[4], NULL, 0);
+				if (*max_errors <= 0) {
+					warn("Can't use <output> parameter.");
+					return -1;
+				}
+			}
+		}
 	}
 
 	*size = strtoul(argv[2], NULL, 0);
@@ -151,7 +174,7 @@ command_pattern_fill(int argc, char *argv[])
 	int rv;
 
 	rv = check_and_process_params(argc, argv, O_WRONLY | O_CREAT,
-	    &fd, &size, &block_size, &block, NULL);
+	    &fd, &size, &block_size, &block, NULL, NULL, NULL);
 	if (rv != 0) {
 		warnx("Error while processing parameters.\n");
 		return rv;
@@ -196,9 +219,13 @@ command_pattern_check(int argc, char *argv[])
 	uint8_t *read_block;
 	int rv;
 	int errors = 0;
+	int max_errors;
+	bool short_output;
+	bool last_was_error = false;
 
 	rv = check_and_process_params(argc, argv, O_RDONLY,
-	    &fd, &size, &block_size, &block, &read_block);
+	    &fd, &size, &block_size, &block, &read_block,
+	    &max_errors, &short_output);
 	if (rv != 0) {
 		warnx("Error while processing parameters.\n");
 		return rv;
@@ -214,14 +241,22 @@ command_pattern_check(int argc, char *argv[])
 			break;
 		}
 		rv = memcmp(block, read_block, read_size);
-		if (rv != 0) {
+		if (short_output) {
+			bool is_error = (rv != 0);
+			if (last_was_error != is_error) {
+				warnx("%s: 0x%x",
+				    is_error ? "ERR" : "OK ",
+				    current);
+			}
+			last_was_error = is_error;
+		} else if (rv != 0) {
 			warnx("Pattern wrong in block at 0x%x", current);
 			warnx("Expected:");
 			print_block(block, read_size);
 			warnx("Got:");
 			print_block(read_block, read_size);
 			++errors;
-			if (errors > 20) {
+			if (errors >= max_errors) {
 				warnx("Too many errors. Refusing to continue.");
 				break;
 			}
