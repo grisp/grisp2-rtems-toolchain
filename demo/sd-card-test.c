@@ -219,7 +219,6 @@ command_pattern_check(int argc, char *argv[])
 			print_block(block, read_size);
 			warnx("Got:");
 			print_block(read_block, read_size);
-			break;
 		}
 	}
 
