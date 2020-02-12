@@ -17,7 +17,7 @@ export PATH := $(PREFIX)/bin:$(PATH)
 
 #H Show this help.
 help:
-	@grep -v grep $(MAKEFILE_LIST) | grep -A1 -h "#H" | sed -e '1!G;h;$$!d' -e 's/:[^\n]*\n/:/g' -e 's/#H//g' | grep -v - --
+	@grep -v grep $(MAKEFILE_LIST) | grep -A1 -h "#H" | sed -e '1!G;h;$$!d' -e 's/:[^\n]*\n/:/g' -e 's/#H//g' | grep -v -- --
 
 #H Build and install the complete toolchain, libraries, fdt and so on.
 install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp
