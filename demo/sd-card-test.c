@@ -195,6 +195,7 @@ command_pattern_check(int argc, char *argv[])
 	uint8_t *block;
 	uint8_t *read_block;
 	int rv;
+	int errors = 0;
 
 	rv = check_and_process_params(argc, argv, O_RDONLY,
 	    &fd, &size, &block_size, &block, &read_block);
@@ -219,6 +220,11 @@ command_pattern_check(int argc, char *argv[])
 			print_block(block, read_size);
 			warnx("Got:");
 			print_block(read_block, read_size);
+			++errors;
+			if (errors > 20) {
+				warnx("Too many errors. Refusing to continue.");
+				break;
+			}
 		}
 	}
 
