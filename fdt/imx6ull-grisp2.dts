@@ -23,6 +23,31 @@
 		/delete-property/ ethernet1;
 #endif /* GRISP_IMX6ULL_Y0 */
 	};
+
+	gpio_leds_grisp2: leds {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpioleds_grisp2>;
+		compatible = "gpio-leds";
+
+		grisp-rgb1-red {
+			gpios = <&gpio5 0 GPIO_ACTIVE_HIGH>;
+		};
+		grisp-rgb1-green {
+			gpios = <&gpio5 1 GPIO_ACTIVE_HIGH>;
+		};
+		grisp-rgb1-blue {
+			gpios = <&gpio5 2 GPIO_ACTIVE_HIGH>;
+		};
+		grisp-rgb2-red {
+			gpios = <&gpio5 3 GPIO_ACTIVE_HIGH>;
+		};
+		grisp-rgb2-green {
+			gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>;
+		};
+		grisp-rgb2-blue {
+			gpios = <&gpio5 9 GPIO_ACTIVE_HIGH>;
+		};
+	};
 };
 
 #ifdef GRISP_IMX6ULL_Y0
@@ -183,6 +208,17 @@
 	pinctrl_gpioleds_som: gpioledssomgrp {
 		fsl,pins = <
 			MX6ULL_PAD_SNVS_TAMPER4__GPIO5_IO04	0x0b0b0
+		>;
+	};
+
+	pinctrl_gpioleds_grisp2: gpioledsgrisp2grp {
+		fsl,pins = <
+			MX6UL_PAD_SNVS_TAMPER0__GPIO5_IO00	0x00088
+			MX6UL_PAD_SNVS_TAMPER1__GPIO5_IO01	0x00088
+			MX6UL_PAD_SNVS_TAMPER2__GPIO5_IO02	0x00088
+			MX6UL_PAD_SNVS_TAMPER3__GPIO5_IO03	0x00088
+			MX6UL_PAD_SNVS_TAMPER5__GPIO5_IO05	0x00088
+			MX6UL_PAD_SNVS_TAMPER9__GPIO5_IO09	0x00088
 		>;
 	};
 };
