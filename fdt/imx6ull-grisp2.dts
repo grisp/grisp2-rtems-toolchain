@@ -48,6 +48,30 @@
 			gpios = <&gpio5 9 GPIO_ACTIVE_HIGH>;
 		};
 	};
+
+	reg_usb1: regulator-usb1 {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usb1_en>;
+		regulator-name = "USB1";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		status = "okay";
+	};
+
+	reg_usb2: regulator-usb2 {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usb2_en>;
+		regulator-name = "USB2";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio3 16 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		status = "okay";
+	};
 };
 
 #ifdef GRISP_IMX6ULL_Y0
@@ -103,7 +127,7 @@
 
 &usbotg1 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usb_otg1_id>;
+	vbus-supply = <&reg_usb1>;
 	dr_mode = "host";
 	status = "okay";
 };
@@ -112,6 +136,7 @@
 &usbotg2 {
 	dr_mode = "host";
 	disable-over-current;
+	vbus-supply = <&reg_usb2>;
 	status = "okay";
 };
 #endif /* GRISP_IMX6ULL_Y0 */
@@ -141,9 +166,15 @@
 };
 
 &iomuxc {
-	pinctrl_usb_otg1_id: usbotg1idgrp {
+	pinctrl_usb1_en: usb1engrp {
 		fsl,pins = <
-			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x17059
+			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x01
+		>;
+	};
+
+	pinctrl_usb2_en: usb2engrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA11__GPIO3_IO16	0x01
 		>;
 	};
 
