@@ -50,26 +50,34 @@
 	};
 
 	reg_usb1: regulator-usb1 {
-		compatible = "regulator-fixed";
+		compatible = "regulator-gpio";
+
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb1_en>;
-		regulator-name = "USB1";
-		regulator-min-microvolt = <5000000>;
+
+		regulator-name = "usb1";
+		regulator-min-microvolt = <0>;
 		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+
+		gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		states = <0 0x0>,
+			<5000000 0x1>;
+
 		status = "okay";
 	};
 
 	reg_usb2: regulator-usb2 {
-		compatible = "regulator-fixed";
+		compatible = "regulator-gpio";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb2_en>;
-		regulator-name = "USB2";
+		regulator-name = "usb2";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio3 16 GPIO_ACTIVE_HIGH>;
+		enable-gpios = <&gpio3 16 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
+		regulator-boot-on;
 		status = "okay";
 	};
 };
@@ -127,8 +135,8 @@
 
 &usbotg1 {
 	pinctrl-names = "default";
-	vbus-supply = <&reg_usb1>;
 	dr_mode = "host";
+	vbus-supply = <&reg_usb1>;
 	status = "okay";
 };
 
@@ -168,13 +176,13 @@
 &iomuxc {
 	pinctrl_usb1_en: usb1engrp {
 		fsl,pins = <
-			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x01
+			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x08
 		>;
 	};
 
 	pinctrl_usb2_en: usb2engrp {
 		fsl,pins = <
-			MX6UL_PAD_LCD_DATA11__GPIO3_IO16	0x01
+			MX6UL_PAD_LCD_DATA11__GPIO3_IO16	0x08
 		>;
 	};
 
