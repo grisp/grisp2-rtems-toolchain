@@ -61,7 +61,7 @@ check_and_process_params(
 		    "    <size> and <block_size> is in bytes\n"
 		    "    <output>: Only relevant for check. Can be: \n"
 		    "              <nr>: print the first <nr> errors\n"
-		    "              \"short\n: Print all errors but short form\n",
+		    "              \"short\": Print all errors but short form\n",
 		    argv[0]);
 		return -1;
 	}
