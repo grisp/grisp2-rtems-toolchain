@@ -50,34 +50,28 @@
 	};
 
 	reg_usb1: regulator-usb1 {
-		compatible = "regulator-gpio";
-
+		compatible = "regulator-fixed";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb1_en>;
+		gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
 
 		regulator-name = "usb1";
-		regulator-min-microvolt = <0>;
+		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		regulator-boot-on;
-		regulator-always-on;
-
-		gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>;
-		states = <0 0x0>,
-			<5000000 0x1>;
 
 		status = "okay";
 	};
 
 	reg_usb2: regulator-usb2 {
-		compatible = "regulator-gpio";
+		compatible = "regulator-fixed";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb2_en>;
+		gpio = <&gpio3 16 GPIO_ACTIVE_HIGH>;
+
 		regulator-name = "usb2";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		enable-gpios = <&gpio3 16 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-boot-on;
+
 		status = "okay";
 	};
 };
