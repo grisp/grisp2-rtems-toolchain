@@ -13,3 +13,6 @@
 [submodule "external/libgrisp"]
 	path = external/libgrisp
 	url = git@main.eb.localhost:eb/122-Stritzinger-GmbH/GRiSP/libgrisp.git
+[submodule "external/barebox"]
+	path = external/barebox
+	url = git@main.eb.localhost:eb/101-embedded-brains/oss/barebox.git
