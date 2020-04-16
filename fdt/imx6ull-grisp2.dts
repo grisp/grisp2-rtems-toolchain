@@ -167,6 +167,11 @@
 	status = "okay";
 };
 
+&ecspi1 {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_spi0>;
+};
+
 &iomuxc {
 	pinctrl_usb1_en: usb1engrp {
 		fsl,pins = <
@@ -235,6 +240,23 @@
 	};
 
 	/delete-node/ gpioledssomgrp;
+
+	pinctrl_spi0: spi0grp {
+		fsl,pins = <
+			MX6UL_PAD_CSI_DATA04__ECSPI1_SCLK	0x8
+			MX6UL_PAD_CSI_DATA05__ECSPI1_SS0	0x8
+			MX6UL_PAD_CSI_DATA06__ECSPI1_MOSI	0x8
+			MX6UL_PAD_CSI_DATA07__ECSPI1_MISO	0x2000
+			/* SPI_SSx */
+			MX6UL_PAD_LCD_DATA05__ECSPI1_SS1	0x8
+			MX6UL_PAD_LCD_DATA06__ECSPI1_SS2	0x8
+			MX6UL_PAD_LCD_DATA07__ECSPI1_SS3	0x8
+			/* SPI_RESET */
+			MX6UL_PAD_CSI_DATA03__GPIO4_IO24	0x8
+			/* SPI_INT */
+			MX6UL_PAD_CSI_VSYNC__GPIO4_IO19		0x8
+		>;
+	};
 };
 
 &iomuxc_snvs {
