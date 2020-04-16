@@ -30,6 +30,7 @@
  */
 
 #include <assert.h>
+#include <dev/spi/spi.h>
 #include <err.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -61,6 +62,11 @@
 #define PRIO_LED_TASK		(RTEMS_MAXIMUM_PRIORITY - 1)
 #define PRIO_DHCP		(RTEMS_MAXIMUM_PRIORITY - 1)
 #define PRIO_WPA		(RTEMS_MAXIMUM_PRIORITY - 1)
+
+#define SPI_FDT_NAME "spi0"
+#define SPI_BUS "/dev/spibus"
+
+#define CMD_SPI_MAX_LEN 32
 
 const char *wpa_supplicant_conf = "/media/mmcsd-0-0/wpa_supplicant.conf";
 
@@ -173,14 +179,99 @@ rtems_shell_cmd_t rtems_shell_STARTFTP_Command = {
 	0, 0, 0
 };
 
+static int
+command_spi(int argc, char *argv[])
+{
+	uint8_t buffer[argc - 1];
+	size_t len = 0;
+	int i;
+	size_t j;
+	int rv;
+	int fd;
+	spi_ioc_transfer msg = {
+		.len = 0,
+		.rx_buf = buffer,
+		.tx_buf = buffer,
+		.speed_hz = 100000,
+		.bits_per_word = 8,
+		.mode = SPI_MODE_0,
+	};
+
+	for (i = 1; i < argc; ++i) {
+		if (argv[i][0] == '-') {
+			switch (argv[i][1]) {
+			case ('l'):
+				msg.mode |= SPI_LSB_FIRST;
+				break;
+			case ('h'):
+				/* fallthrough */
+			default:
+				printf("Use with:\n"
+				    "%s [-lh] xx [xx [..]]\n"
+				    "    xx  Hex value of a byte to send\n"
+				    "    -l  Send LSB first\n"
+				    "    -h  Print this help\n", argv[0]);
+				return 1;
+				break;
+			}
+		} else {
+			errno = 0;
+			buffer[len] = (uint8_t) strtol(argv[i], NULL, 16);
+			if (errno != 0) {
+				warn("Couldn't process '%s'", argv[i]);
+				return 1;
+			}
+			++len;
+		}
+	}
+
+	if (len == 0) {
+		warnx("Nothing to do");
+		return 0;
+	}
+
+	fd = open(SPI_BUS, O_RDWR);
+	if (fd < 0) {
+		warn("Couldn't open bus");
+		return 1;
+	}
+	msg.len = len;
+	rv = ioctl(fd, SPI_IOC_MESSAGE(1), &msg);
+	if (rv == -1) {
+		warn("Couldn't send the message");
+	} else {
+		printf("received:");
+		for (j = 0; j < len; ++j) {
+			printf(" %02x", buffer[j]);
+		}
+		printf("\n");
+	}
+	close(fd);
+
+	return 0;
+}
+
+rtems_shell_cmd_t shell_SPI_Command = {
+	"spi",
+	"spi [-lh] xx [xx [..]]",
+	"app",
+	command_spi,
+	NULL, NULL, 0, 0, 0
+};
+
 static void
 Init(rtems_task_argument arg)
 {
 	rtems_status_code sc;
+	int rv;
 
 	(void)arg;
 
 	puts("\nGRiSP2 RTEMS Demo\n");
+
+	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
+	assert(rv == 0);
+
 	grisp_init_sd_card();
 	grisp_init_lower_self_prio();
 	grisp_init_libbsd();
@@ -276,7 +367,8 @@ Init(rtems_task_argument arg)
   &rtems_shell_WPA_SUPPLICANT_Command, \
   &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
   &rtems_shell_PATTERN_FILL_Command, \
-  &rtems_shell_PATTERN_CHECK_Command
+  &rtems_shell_PATTERN_CHECK_Command, \
+  &shell_SPI_Command
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 
