@@ -130,7 +130,11 @@
 &usbotg1 {
 	pinctrl-names = "default";
 	dr_mode = "host";
+#ifndef GRISP_IMX6ULL_Y0
 	vbus-supply = <&reg_usb1>;
+#else
+	vbus-supply = <&reg_usb2>;
+#endif /* GRISP_IMX6ULL_Y0 */
 	status = "okay";
 };
 
