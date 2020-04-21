@@ -288,9 +288,10 @@ Init(rtems_task_argument arg)
 	sleep(1);
 	grisp_init_dhcpcd(PRIO_DHCP);
 
-	//grisp_led_set2(false, false, true);
-	//create_wlandev();
-	//grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA);
+	grisp_led_set2(false, false, true);
+	sleep(3);
+	create_wlandev();
+	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA);
 
 	init_led();
 	start_shell();
