@@ -388,7 +388,9 @@ Init(rtems_task_argument arg)
   &rtems_shell_PATTERN_FILL_Command, \
   &rtems_shell_PATTERN_CHECK_Command, \
   &shell_SPI_Command, \
-  &shell_I2CDETECT_Command
+  &shell_I2CDETECT_Command, \
+  &shell_I2CGET_Command, \
+  &shell_I2CSET_Command
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 

@@ -25,10 +25,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* The commands implemented here are heavily simplified versions of the Linux
+ * i2c tools. Instead of the bus number they expect a bus path. */
+
 #include <dev/i2c/i2c.h>
 #include <err.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -46,7 +50,7 @@ command_i2cdetect(int argc, char *argv[])
 	uint16_t current;
 
 	if (argc != 2 || strcmp(argv[1], "-h") == 0) {
-		warnx("Use with: %s I2CBUS", argv[0]);
+		warnx("Use with: %s", shell_I2CDETECT_Command.usage);
 		return 1;
 	}
 
@@ -97,5 +101,140 @@ rtems_shell_cmd_t shell_I2CDETECT_Command = {
 	"i2cdetect I2CBUS",
 	"app",
 	command_i2cdetect,
+	NULL, NULL, 0, 0, 0
+};
+
+static int
+command_i2cget(int argc, char *argv[])
+{
+	int fd;
+	int rv;
+	const char *bus;
+	uint16_t chip_address;
+	uint8_t data_address;
+	uint8_t value;
+	i2c_msg msgs[] = {{
+		.flags = 0,
+		.buf = &data_address,
+		.len = 1,
+	}, {
+		.flags = I2C_M_RD,
+		.buf = &value,
+		.len = 1,
+	}};
+	struct i2c_rdwr_ioctl_data payload = {
+		.msgs = msgs,
+		.nmsgs = sizeof(msgs)/sizeof(msgs[0]),
+	};
+
+	if (argc != 4) {
+		warnx("Use with: %s", shell_I2CGET_Command.usage);
+		return 1;
+	}
+
+	errno = 0;
+	chip_address = (uint16_t) strtoul(argv[2], NULL, 0);
+	if (errno != 0) {
+		warn("Couldn't read CHIP_ADDRESS");
+	}
+	msgs[0].addr = chip_address;
+	msgs[1].addr = chip_address;
+
+	errno = 0;
+	data_address = (uint8_t) strtoul(argv[3], NULL, 0);
+	if (errno != 0) {
+		warn("Couldn't read DATA_ADDRESS");
+	}
+
+	bus = argv[1];
+	fd = open(bus, O_RDWR);
+	if (fd < 0) {
+		warn("Couldn't open bus");
+		return 1;
+	}
+
+
+	rv = ioctl(fd, I2C_RDWR, &payload);
+	if (rv < 0) {
+		warn("error");
+	} else {
+		printf("0x%02x\n", value);
+	}
+	close(fd);
+
+	return rv;
+}
+
+rtems_shell_cmd_t shell_I2CGET_Command = {
+	"i2cget",
+	"i2cget I2CBUS CHIP-ADDRESS DATA-ADDRESS",
+	"app",
+	command_i2cget,
+	NULL, NULL, 0, 0, 0
+};
+
+static int
+command_i2cset(int argc, char *argv[])
+{
+	int fd;
+	int rv;
+	const char *bus;
+	uint16_t chip_address;
+	uint8_t writebuff[2];
+	i2c_msg msgs[] = {{
+		.flags = 0,
+		.buf = writebuff,
+		.len = sizeof(writebuff),
+	}};
+	struct i2c_rdwr_ioctl_data payload = {
+		.msgs = msgs,
+		.nmsgs = sizeof(msgs)/sizeof(msgs[0]),
+	};
+
+	if (argc != 5) {
+		warnx("Use with: %s", shell_I2CSET_Command.usage);
+		return 1;
+	}
+
+	errno = 0;
+	chip_address = (uint16_t) strtoul(argv[2], NULL, 0);
+	if (errno != 0) {
+		warn("Couldn't read CHIP_ADDRESS");
+	}
+	msgs[0].addr = chip_address;
+
+	errno = 0;
+	writebuff[0] = (uint8_t) strtoul(argv[3], NULL, 0);
+	if (errno != 0) {
+		warn("Couldn't read DATA_ADDRESS");
+	}
+
+	errno = 0;
+	writebuff[1] = (uint8_t) strtoul(argv[4], NULL, 0);
+	if (errno != 0) {
+		warn("Couldn't read VALUE");
+	}
+
+	bus = argv[1];
+	fd = open(bus, O_RDWR);
+	if (fd < 0) {
+		warn("Couldn't open bus");
+		return 1;
+	}
+
+	rv = ioctl(fd, I2C_RDWR, &payload);
+	if (rv < 0) {
+		warn("error");
+	}
+	close(fd);
+
+	return rv;
+}
+
+rtems_shell_cmd_t shell_I2CSET_Command = {
+	"i2cset",
+	"i2cset I2CBUS CHIP-ADDRESS DATA-ADDRESS VALUE",
+	"app",
+	command_i2cset,
 	NULL, NULL, 0, 0, 0
 };
