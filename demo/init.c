@@ -30,9 +30,7 @@
  */
 
 #include <assert.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 
 #include <rtems.h>
 #include <rtems/bsd/bsd.h>
