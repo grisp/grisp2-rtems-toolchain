@@ -284,6 +284,12 @@ Init(rtems_task_argument arg)
 	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
 	assert(rv == 0);
 
+	rv = i2c_bus_register_imx("/dev/i2c-1", "i2c0");
+	assert(rv == 0);
+
+	rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
+	assert(rv == 0);
+
 	grisp_init_sd_card();
 	grisp_init_lower_self_prio();
 	grisp_init_libbsd();
