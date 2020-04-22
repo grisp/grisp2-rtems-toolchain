@@ -95,6 +95,8 @@
 };
 
 &i2c1 {
+	status = "okay";
+
 	ds2482s: onewire_master@18 {
 		compatible = "maxim,ds2482s";
 		reg = <0x18>;
@@ -115,6 +117,13 @@
 		reg = <0x60>;
 		status = "okay";
 	};
+};
+
+&i2c2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c2>;
+	clock-frequency = <100000>;
+	status = "okay";
 };
 
 &mdio {
@@ -184,6 +193,13 @@
 };
 
 &iomuxc {
+	pinctrl_i2c2: i2c2grp {
+		fsl,pins = <
+			MX6UL_PAD_UART5_TX_DATA__I2C2_SCL	0x4001b830
+			MX6UL_PAD_UART5_RX_DATA__I2C2_SDA	0x4001b830
+		>;
+	};
+
 	pinctrl_usb1_en: usb1engrp {
 		fsl,pins = <
 			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x08
