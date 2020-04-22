@@ -57,11 +57,12 @@ command_i2cdetect(int argc, char *argv[])
 		return 1;
 	}
 
-	printf("Found: ");
-	for (current = first; current < last; ++current) {
+	printf("    x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xA xB xC xD xE xF\n"
+	       "0x    ");
+	for (current = first; current <= last; ++current) {
 		i2c_msg msg = {
 			.addr = current,
-			.flags = I2C_M_STOP,
+			.flags = 0,
 			.len = 0,
 			.buf = NULL,
 		};
@@ -71,9 +72,16 @@ command_i2cdetect(int argc, char *argv[])
 			.nmsgs = 1,
 		};
 
+		if ((current & 0x0F) == 0) {
+			printf("\n%1xx ", current >> 4);
+		}
+
 		rv = ioctl(fd, I2C_RDWR, &payload);
 		if (rv < 0) {
-			printf(".");
+			if (errno != EIO) {
+				warn("ioctl failed");
+			}
+			printf(" --");
 		} else {
 			printf(" %02x", current);
 		}
