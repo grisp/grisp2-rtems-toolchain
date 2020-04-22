@@ -100,7 +100,12 @@ static void
 create_wlandev(void)
 {
 	int exit_code;
-	char *ifcfg[] = {
+	char *ifcfg_check[] = {
+		"ifconfig",
+		"wlan0",
+		NULL
+	};
+	char *ifcfg_create[] = {
 		"ifconfig",
 		"wlan0",
 		"create",
@@ -110,9 +115,16 @@ create_wlandev(void)
 		NULL
 	};
 
-	exit_code = rtems_bsd_command_ifconfig(RTEMS_BSD_ARGC(ifcfg), ifcfg);
-	if(exit_code != EXIT_SUCCESS) {
-		printf("ERROR while creating wlan0.");
+	/* Check if device exists */
+	exit_code = rtems_bsd_command_ifconfig(
+	    RTEMS_BSD_ARGC(ifcfg_check), ifcfg_check);
+	if (exit_code != EXIT_SUCCESS) {
+		/* Create it if not */
+		exit_code = rtems_bsd_command_ifconfig(
+		    RTEMS_BSD_ARGC(ifcfg_create), ifcfg_create);
+		if(exit_code != EXIT_SUCCESS) {
+			printf("ERROR while creating wlan0.\n");
+		}
 	}
 }
 
@@ -290,8 +302,7 @@ Init(rtems_task_argument arg)
 
 	grisp_led_set2(false, false, true);
 	sleep(3);
-	create_wlandev();
-	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA);
+	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA, create_wlandev);
 
 	init_led();
 	start_shell();
