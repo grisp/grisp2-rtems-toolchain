@@ -54,6 +54,7 @@
 #include <grisp/init.h>
 
 #include "sd-card-test.h"
+#include "i2c.h"
 
 #define STACK_SIZE_INIT_TASK	(64 * 1024)
 #define STACK_SIZE_SHELL	(64 * 1024)
@@ -386,7 +387,8 @@ Init(rtems_task_argument arg)
   &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
   &rtems_shell_PATTERN_FILL_Command, \
   &rtems_shell_PATTERN_CHECK_Command, \
-  &shell_SPI_Command
+  &shell_SPI_Command, \
+  &shell_I2CDETECT_Command
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 
