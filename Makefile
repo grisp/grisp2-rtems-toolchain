@@ -75,7 +75,7 @@ libbsd:
 	    --prefix=$(PREFIX) \
 	    --rtems-bsps=$(ARCH)/$(BSP) \
 	    --enable-warnings \
-	    --optimization=2 \
+	    --optimization=0 \
 	    --buildset=$(LIBBSD_BUILDSET)
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
