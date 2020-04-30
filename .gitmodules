@@ -4,15 +4,17 @@
 	branch = master
 [submodule "rtems"]
 	path = external/rtems
-	url = git@main.eb.localhost:eb/101-embedded-brains/oss/rtems.git
-	branch = imx6-phytec
+	url = https://github.com/grisp/rtems.git
+	branch = grisp2-devel-20200430
 [submodule "rtems-libbsd"]
 	path = external/rtems-libbsd
-	url = git@main.eb.localhost:eb/101-embedded-brains/oss/rtems-libbsd.git
-	branch = imx6-phytec
+	url = https://github.com/grisp/rtems-libbsd.git
+	branch = 5-freebsd-12
 [submodule "external/libgrisp"]
 	path = external/libgrisp
-	url = git@main.eb.localhost:eb/122-Stritzinger-GmbH/GRiSP/libgrisp.git
+	url = https://github.com/grisp/libgrisp.git
+	branch = master
 [submodule "external/barebox"]
 	path = external/barebox
-	url = git@main.eb.localhost:eb/101-embedded-brains/oss/barebox.git
+	url = https://github.com/grisp/barebox.git
+	branch = v2020.03.0-GRiSP2
