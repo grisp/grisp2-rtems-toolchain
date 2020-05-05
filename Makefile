@@ -12,6 +12,15 @@ SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 
+UNAME := $(shell uname -s)
+ifeq ($(UNAME),Darwin)
+	NUMCORE = $(shell sysctl -n hw.ncpu)
+else ifeq ($(UNAME),Linux)
+	NUMCORE = $(shell nproc)
+else
+	NUMCORE = 1
+endif
+
 .PHONY: fdt demo demo-clean
 
 export PATH := $(PREFIX)/bin:$(PATH)
@@ -56,8 +65,8 @@ bsp:
 	    IMX_CCM_AHB_HZ=66000000 \
 	    IMX_CCM_SDHCI_HZ=198000000 \
 	    IMX_CCM_ECSPI_HZ=60000000
-	cd $(BUILD_BSP) && make -j `nproc`
-	cd $(BUILD_BSP) && make -j `nproc` install
+	cd $(BUILD_BSP) && make -j $(NUMCORE)
+	cd $(BUILD_BSP) && make -j $(NUMCORE) install
 
 #H Build a Makefile helper for the applications.
 bsp.mk: $(PREFIX)/make/custom/$(BSP).mk
@@ -93,7 +102,7 @@ fdt:
 barebox:
 	cd $(SRC_BAREBOX) && rm -f .config
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
-	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j`nproc`
+	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j$(NUMCORE)
 
 #H Build the demo application.
 demo:
