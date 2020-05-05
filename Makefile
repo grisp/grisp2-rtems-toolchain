@@ -86,7 +86,7 @@ libgrisp:
 
 #H Build the flattened device tree.
 fdt:
-	make PREFIX=$(PREFIX) -C fdt clean all
+	make PREFIX=$(PREFIX) CPP=arm-rtems5-cpp -C fdt clean all
 
 .PHONY: barebox
 #H Build the bootloader
