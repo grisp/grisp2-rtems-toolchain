@@ -13,8 +13,11 @@ BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 
 UNAME := $(shell uname -s)
-ifeq ($(UNAME),Darwin)
+
+# macOS and FreeBSD
+ifneq (,$(filter $(UNAME),Darwin FreeBSD))
 	NUMCORE = $(shell sysctl -n hw.ncpu)
+# Linux
 else ifeq ($(UNAME),Linux)
 	NUMCORE = $(shell nproc)
 else
