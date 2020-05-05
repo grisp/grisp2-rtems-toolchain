@@ -19,6 +19,23 @@ running on GRiSP2. This includes:
 
 ## How to Build
 
+
+### Requirements
+
+#### macOS
+
+Building the toolchain on macOS requires a few dependencies:
+
+* `dtc`
+
+**Install with Homebrew**:
+
+```
+brew install dtc
+```
+
+### Building
+
 For building the basic stuff do a
 
     make install
