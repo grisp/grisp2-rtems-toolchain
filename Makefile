@@ -12,6 +12,18 @@ SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 
+UNAME := $(shell uname -s)
+
+# macOS and FreeBSD
+ifneq (,$(filter $(UNAME),Darwin FreeBSD))
+	NUMCORE = $(shell sysctl -n hw.ncpu)
+# Linux
+else ifeq ($(UNAME),Linux)
+	NUMCORE = $(shell nproc)
+else
+	NUMCORE = 1
+endif
+
 .PHONY: fdt demo demo-clean
 
 export PATH := $(PREFIX)/bin:$(PATH)
@@ -22,7 +34,7 @@ help:
 	@grep -v grep $(MAKEFILE_LIST) | grep -A1 -h "#H" | sed -e '1!G;h;$$!d' -e 's/:[^\n]*\n/:\n\t/g' -e 's/#H//g' | grep -v -- --
 
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp barebox
+install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp
 
 #H Update the submodules.
 submodule-update:
@@ -56,8 +68,8 @@ bsp:
 	    IMX_CCM_AHB_HZ=66000000 \
 	    IMX_CCM_SDHCI_HZ=198000000 \
 	    IMX_CCM_ECSPI_HZ=60000000
-	cd $(BUILD_BSP) && make -j `nproc`
-	cd $(BUILD_BSP) && make -j `nproc` install
+	cd $(BUILD_BSP) && make -j $(NUMCORE)
+	cd $(BUILD_BSP) && make -j $(NUMCORE) install
 
 #H Build a Makefile helper for the applications.
 bsp.mk: $(PREFIX)/make/custom/$(BSP).mk
@@ -86,14 +98,17 @@ libgrisp:
 
 #H Build the flattened device tree.
 fdt:
-	make PREFIX=$(PREFIX) -C fdt clean all
+	make PREFIX=$(PREFIX) CPP=arm-rtems5-cpp -C fdt clean all
 
 .PHONY: barebox
 #H Build the bootloader
 barebox:
+	ifneq ($(UNAME),Linux)
+		$(error Barebox can only be built on Linux)
+	else
 	cd $(SRC_BAREBOX) && rm -f .config
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
-	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j`nproc`
+	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j$(NUMCORE)
 
 #H Build the demo application.
 demo:
