@@ -103,6 +103,9 @@ fdt:
 .PHONY: barebox
 #H Build the bootloader
 barebox:
+	ifneq ($(UNAME),Linux)
+		$(error Barebox can only be built on Linux)
+	else
 	cd $(SRC_BAREBOX) && rm -f .config
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
 	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j$(NUMCORE)
