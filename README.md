@@ -24,14 +24,35 @@ running on GRiSP2. This includes:
 
 #### macOS
 
-Building the toolchain on macOS requires a few dependencies:
+Building the toolchain on macOS requires the following dependencies:
 
+* [Xcode][1] or [Command Line Tools for Xcode][2].
 * `dtc`
+* `u-boot-tools`
 
-**Install with Homebrew**:
+**Install with Homebrew**
 
 ```
-brew install dtc
+brew install dtc u-boot-tools
+```
+
+#### Ubuntu
+
+Building the toolchain on Ubuntu requires the following packages:
+
+* `build-essential`
+* `flex`
+* `bison`
+* `cmake`
+* `texinfo`
+* `device-tree-compiler`
+* `u-boot-tools`
+* `lzop`
+
+**Install with apt-get**
+
+```
+sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools
 ```
 
 ### Building
@@ -109,3 +130,7 @@ One way to write an Image to eMMC is via the bootloader:
    image is written.
 1. Reset the system with `reset` on the shell. Barebox should now boot your
    application.
+
+
+[1]: https://apps.apple.com/de/app/xcode/id497799835
+[2]: https://developer.apple.com/library/archive/technotes/tn2339/_index.html

@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name:  Install dependencies
+        shell: bash
+        run:   |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo apt-get install \
+              build-essential \
+              flex \
+              bison \
+              cmake \
+              texinfo \
+              device-tree-compiler \
+              u-boot-tools \
+              lzop
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            brew install dtc u-boot-tools
+          else
+            echo "$RUNNER_OS not supported"
+            exit 1
+          fi
+      - name: Build toolchain
+        shell: bash
+        run: |
+          make install
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            make barebox
+          fi
+      - name: Build demo application
+        shell: bash
+        run: |
+          make demo
