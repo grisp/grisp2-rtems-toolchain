@@ -60,6 +60,9 @@ command_spi(int argc, char *argv[])
 			case ('l'):
 				msg.mode |= SPI_LSB_FIRST;
 				break;
+			case ('o'):
+				msg.mode |= SPI_LOOP;
+				break;
 			case ('h'):
 				/* fallthrough */
 			default:
@@ -68,6 +71,7 @@ command_spi(int argc, char *argv[])
 				    "    SPI_BUS  Bus device to use\n"
 				    "    xx       Hex value of a byte to send\n"
 				    "    -l       Send LSB first\n"
+				    "    -o       Use loopback mode\n"
 				    "    -h       Print this help\n", argv[0]);
 				return 1;
 				break;
