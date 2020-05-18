@@ -3,3 +3,4 @@
 /rtems/5
 build
 /demo*/b-*/
+external/libinih/b-imx7

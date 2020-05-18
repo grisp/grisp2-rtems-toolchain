@@ -8,6 +8,7 @@ RSB = $(MAKEFILE_DIR)/external/rtems-source-builder
 SRC_LIBBSD = $(MAKEFILE_DIR)/external/rtems-libbsd
 SRC_RTEMS = $(MAKEFILE_DIR)/external/rtems
 SRC_LIBGRISP = $(MAKEFILE_DIR)/external/libgrisp
+SRC_LIBINIH = $(MAKEFILE_DIR)/external/libinih
 SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
@@ -34,7 +35,7 @@ help:
 	@grep -v grep $(MAKEFILE_LIST) | grep -A1 -h "#H" | sed -e '1!G;h;$$!d' -e 's/:[^\n]*\n/:\n\t/g' -e 's/#H//g' | grep -v -- --
 
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp
+install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
 
 #H Update the submodules.
 submodule-update:
@@ -95,6 +96,10 @@ libbsd:
 #H Build and install libgrisp.
 libgrisp:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBGRISP) install
+
+#H Build and install libinih
+libinih:
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBINIH) clean install
 
 #H Build the flattened device tree.
 fdt:
