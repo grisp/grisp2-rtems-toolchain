@@ -25,10 +25,20 @@ else
 	NUMCORE = 1
 endif
 
+# Note: You have to rebuild BSP and all libs if you change that.
+DEBUG = 1
+ifeq ($(DEBUG),1)
+OPTIMIZATION = 0
+EXTRA_BSP_OPTS = --enable-rtems-debug
+else
+OPTIMIZATION = 2
+EXTRA_BSP_OPTS =
+endif
+
 .PHONY: fdt demo demo-clean
 
 export PATH := $(PREFIX)/bin:$(PATH)
-export CFLAGS_OPTIMIZE_V ?= -O0 -g -ffunction-sections -fdata-sections
+export CFLAGS_OPTIMIZE_V ?= -O$(OPTIMIZATION) -g -ffunction-sections -fdata-sections
 
 #H Show this help.
 help:
@@ -62,8 +72,8 @@ bsp:
 	    --enable-posix \
 	    --enable-rtemsbsp=$(BSP) \
 	    --enable-maintainer-mode \
-	    --enable-rtems-debug \
 	    --disable-networking \
+	    $(EXTRA_BSP_OPTS) \
 	    IMX_CCM_IPG_HZ=66000000 \
 	    IMX_CCM_UART_HZ=80000000 \
 	    IMX_CCM_AHB_HZ=66000000 \
@@ -88,7 +98,7 @@ libbsd:
 	    --prefix=$(PREFIX) \
 	    --rtems-bsps=$(ARCH)/$(BSP) \
 	    --enable-warnings \
-	    --optimization=0 \
+	    --optimization=$(OPTIMIZATION) \
 	    --buildset=$(LIBBSD_BUILDSET)
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
