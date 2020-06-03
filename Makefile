@@ -10,7 +10,10 @@ SRC_RTEMS = $(MAKEFILE_DIR)/external/rtems
 SRC_LIBGRISP = $(MAKEFILE_DIR)/external/libgrisp
 SRC_LIBINIH = $(MAKEFILE_DIR)/external/libinih
 SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
+SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
+BUILD_LOGS = $(MAKEFILE_DIR)/build
+BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 
 UNAME := $(shell uname -s)
@@ -37,6 +40,7 @@ endif
 
 .PHONY: fdt demo demo-clean
 
+export ORGPATH := $(PATH)
 export PATH := $(PREFIX)/bin:$(PATH)
 export CFLAGS_OPTIMIZE_V ?= -O$(OPTIMIZATION) -g -ffunction-sections -fdata-sections
 
@@ -45,7 +49,7 @@ help:
 	@grep -v grep $(MAKEFILE_LIST) | grep -A1 -h "#H" | sed -e '1!G;h;$$!d' -e 's/:[^\n]*\n/:\n\t/g' -e 's/#H//g' | grep -v -- --
 
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
+install: submodule-update toolchain libtool bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
 
 #H Update the submodules.
 submodule-update:
@@ -59,7 +63,10 @@ bootstrap:
 #H Build and install the toolchain.
 toolchain:
 	rm -rf $(RSB)/rtems/build
-	cd $(RSB)/rtems && ../source-builder/sb-set-builder --prefix=$(PREFIX) 5/rtems-$(ARCH)
+	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
+	    --prefix=$(PREFIX) \
+	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
+	    5/rtems-$(ARCH)
 	rm -rf $(RSB)/rtems/build
 
 #H Build the RTEMS board support package.
@@ -124,6 +131,49 @@ endif
 	cd $(SRC_BAREBOX) && rm -f .config
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
 	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j$(NUMCORE)
+
+#H Build OpenOCD for debugging
+openocd:
+	# Note: Use a hack to _not_ use the RTEMS tools environment. The RTEMS
+	# aclocal version isn't compatible with OpenOCD
+	cd $(SRC_OPENOCD) && PATH=$(ORGPATH) ./bootstrap
+	cd $(SRC_OPENOCD) && PATH=$(ORGPATH) ./configure --prefix="$(PREFIX)" \
+	    --enable-ftdi \
+	    --disable-stlink \
+	    --disable-ti-icdi \
+	    --disable-ulink \
+	    --disable-usb-blaster-2 \
+	    --disable-vsllink \
+	    --disable-osbdm \
+	    --disable-opendous \
+	    --disable-aice \
+	    --disable-usbprog \
+	    --disable-rlink \
+	    --disable-armjtagew \
+	    --disable-cmsis-dap \
+	    --disable-usb-blaster \
+	    --disable-presto \
+	    --disable-openjtag \
+	    --disable-jlink \
+	    --disable-parport \
+	    --disable-parport-ppdev \
+	    --disable-parport-giveio \
+	    --disable-jtag_vpi \
+	    --disable-amtjtagaccel \
+	    --disable-zy1000-master \
+	    --disable-zy1000 \
+	    --disable-ioutil \
+	    --disable-ep93xx \
+	    --disable-at91rm9200 \
+	    --disable-bcm2835gpio \
+	    --disable-gw16012 \
+	    --disable-oocd_trace \
+	    --disable-buspirate \
+	    --disable-sysfsgpio \
+	    --disable-minidriver-dummy \
+	    --disable-remote-bitbang \
+	    --disable-werror
+	cd $(SRC_OPENOCD) && PATH=$(ORGPATH) make -j$(NUMCORE) install
 
 #H Build the demo application.
 demo:

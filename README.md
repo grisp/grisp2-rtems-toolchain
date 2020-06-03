@@ -131,6 +131,32 @@ One way to write an Image to eMMC is via the bootloader:
 1. Reset the system with `reset` on the shell. Barebox should now boot your
    application.
 
+## Debugging
+
+Debugging is either possible by connecting your favorite JTAG adapter to the
+JTAG port. The connector pin out is the same as for the
+[ARM Cortex M connectors][4].
+
+Alternatively you can use the on-board FTDI to JTAG adapter. The adapter is
+compatible to a [Floss-JTAG][3] supported by OpenOCD. The following text shows
+how to use that on-board solution.
+
+First build and install OpenOCD by running `make submodule-update` (if you
+havn't build the toolchain before) and `make openocd`. Prerequisites for
+building OpenOCD are: `autoconf`, `automake`, `libtool` and `libusb-1_0-devel`.
+
+Make sure that your GRiSP2 starts some sample application with a sane FDT. The
+debugger scripts will wait till the bootloader loads the FDT and the application
+and then replaces the application with the one that you want to debug.
+
+After that you should start openocd on one console using
+`./debug/openocd/start-openocd.sh`. This starts an GDB-Server. Do not terminate
+the process. You can then start a gdb that connects to the server using
+`./debug/openocd/start-gdb.sh path/to/app.exe`. The script adds a `reset`
+command to the normal gdb that restarts the target and reloads the application.
+Note that for bigger applications, that might need quite some time.
 
 [1]: https://apps.apple.com/de/app/xcode/id497799835
 [2]: https://developer.apple.com/library/archive/technotes/tn2339/_index.html
+[3]: https://github.com/esden/floss-jtag
+[4]: http://infocenter.arm.com/help/topic/com.arm.doc.faqs/attached/13634/cortex_debug_connectors.pdf
