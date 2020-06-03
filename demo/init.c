@@ -109,6 +109,12 @@ create_wlandev(void)
 		"create",
 		"wlandev",
 		"rtwn0",
+		"down",
+		NULL
+	};
+	char *ifcfg_up[] = {
+		"ifconfig",
+		"wlan0",
 		"up",
 		NULL
 	};
@@ -122,6 +128,12 @@ create_wlandev(void)
 		    RTEMS_BSD_ARGC(ifcfg_create), ifcfg_create);
 		if(exit_code != EXIT_SUCCESS) {
 			printf("ERROR while creating wlan0.\n");
+		}
+		sleep(1);
+		exit_code = rtems_bsd_command_ifconfig(
+		    RTEMS_BSD_ARGC(ifcfg_up), ifcfg_up);
+		if(exit_code != EXIT_SUCCESS) {
+			printf("ERROR while setting wlan0 up.\n");
 		}
 	}
 }
