@@ -1,7 +1,7 @@
 &HOME=os.env("HOME")
 &BSP="imx7"
 
-&APPLICATION_FILE="../demo/b-&BSP/demo.exe"
+&APPLICATION_FILE="../../demo/b-&BSP/demo.exe"
 
 global &initialized
 
