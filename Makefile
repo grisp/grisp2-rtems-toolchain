@@ -6,6 +6,7 @@ MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ARCH = arm
 BSP = imx7
+TARGET = $(ARCH)-rtems5
 PREFIX = $(MAKEFILE_DIR)/rtems/5
 RSB = $(MAKEFILE_DIR)/external/rtems-source-builder
 SRC_LIBBSD = $(MAKEFILE_DIR)/external/rtems-libbsd
@@ -15,6 +16,19 @@ SRC_LIBINIH = $(MAKEFILE_DIR)/external/libinih
 SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
+
+GRISP_TOOLCHAIN_REVISION = $(shell git rev-parse HEAD)
+GRISP_TOOLCHAIN_PLATFORM = grisp2
+define GRISP_BUILDINFO_C
+#define GRISP_TOOLCHAIN_REVISION "$(GRISP_TOOLCHAIN_REVISION)"
+#define GRISP_TOOLCHAIN_PLATFORM "$(GRISP_TOOLCHAIN_PLATFORM)"
+endef
+export GRISP_BUILDINFO_C
+define GRISP_BUILDINFO_ERL
+-define(GRISP_TOOLCHAIN_REVISION, "$(GRISP_TOOLCHAIN_REVISION)").
+-define(GRISP_TOOLCHAIN_PLATFORM, "$(GRISP_TOOLCHAIN_PLATFORM)").
+endef
+export BUILDINFO_ERL
 
 UNAME := $(shell uname -s)
 
@@ -49,7 +63,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
+install: submodule-update toolchain toolchain-revision bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -68,6 +82,17 @@ toolchain:
 	rm -rf $(RSB)/rtems/build
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder --prefix=$(PREFIX) 5/rtems-$(ARCH)
 	rm -rf $(RSB)/rtems/build
+
+.PHONY: toolchain-revision
+#H Create toolchain revision files
+toolchain-revision:
+	echo "${GRISP_TOOLCHAIN_REVISION}" > "${PREFIX}/GRISP_TOOLCHAIN_REVISION"
+	echo "${GRISP_TOOLCHAIN_PLATFORM}" > "${PREFIX}/GRISP_TOOLCHAIN_PLATFORM"
+	echo "" > "${PREFIX}/${TARGET}/${BSP}/lib/include/grisp/grisp-buildinfo.h"
+	echo "$$GRISP_BUILDINFO_C" > \
+		"${PREFIX}/${TARGET}/${BSP}/lib/include/grisp/grisp-buildinfo.h"
+	echo "$$GRISP_BUILDINFO_ERL" > \
+		"${PREFIX}/grisp_buildinfo.hrl"
 
 .PHONY: bsp
 #H Build the RTEMS board support package.
@@ -126,7 +151,7 @@ libinih:
 .PHONY: fdt
 #H Build the flattened device tree.
 fdt:
-	make PREFIX=$(PREFIX) CPP=arm-rtems5-cpp -C fdt clean all
+	make PREFIX=$(PREFIX) CPP=$(TARGET)-cpp -C fdt clean all
 
 .PHONY: barebox
 #H Build the bootloader
@@ -136,7 +161,7 @@ ifneq ($(UNAME),Linux)
 endif
 	cd $(SRC_BAREBOX) && rm -f .config
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
-	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j$(NUMCORE)
+	cd $(SRC_BAREBOX) && make ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- -j$(NUMCORE)
 
 .PHONY: demo
 #H Build the demo application.
