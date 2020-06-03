@@ -1,4 +1,7 @@
 # Note: $(PWD) doesn't work together with -C option of make.
+
+.PHONY: all clean test
+
 MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ARCH = arm
@@ -35,33 +38,38 @@ OPTIMIZATION = 2
 EXTRA_BSP_OPTS =
 endif
 
-.PHONY: fdt demo demo-clean
 
 export PATH := $(PREFIX)/bin:$(PATH)
 export CFLAGS_OPTIMIZE_V ?= -O$(OPTIMIZATION) -g -ffunction-sections -fdata-sections
 
+.PHONY: help
 #H Show this help.
 help:
 	@grep -v grep $(MAKEFILE_LIST) | grep -A1 -h "#H" | sed -e '1!G;h;$$!d' -e 's/:[^\n]*\n/:\n\t/g' -e 's/#H//g' | grep -v -- --
 
+.PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
 install: submodule-update toolchain bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
 
+.PHONY: submodule-update
 #H Update the submodules.
 submodule-update:
 	git submodule update --init
 	cd $(SRC_LIBBSD) && git submodule update --init rtems_waf
 
+.PHONY: bootstrap
 #H Run bootstrap for RTEMS.
 bootstrap:
 	cd $(SRC_RTEMS) && $(RSB)/source-builder/sb-bootstrap
 
+.PHONY: toolchain
 #H Build and install the toolchain.
 toolchain:
 	rm -rf $(RSB)/rtems/build
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder --prefix=$(PREFIX) 5/rtems-$(ARCH)
 	rm -rf $(RSB)/rtems/build
 
+.PHONY: bsp
 #H Build the RTEMS board support package.
 bsp:
 	rm -rf $(BUILD_BSP)
@@ -82,6 +90,7 @@ bsp:
 	cd $(BUILD_BSP) && make -j $(NUMCORE)
 	cd $(BUILD_BSP) && make -j $(NUMCORE) install
 
+.PHONY: bsp.mk
 #H Build a Makefile helper for the applications.
 bsp.mk: $(PREFIX)/make/custom/$(BSP).mk
 $(PREFIX)/make/custom/$(BSP).mk: src/bsp.mk
@@ -91,6 +100,7 @@ $(PREFIX)/make/custom/$(BSP).mk: src/bsp.mk
 	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
 	    > $@
 
+.PHONY: libbsd
 #H Build and install libbsd.
 libbsd:
 	rm -rf $(SRC_LIBBSD)/build
@@ -103,14 +113,17 @@ libbsd:
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
 
+.PHONY: libgrisp
 #H Build and install libgrisp.
 libgrisp:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBGRISP) install
 
+.PHONY: libinih
 #H Build and install libinih
 libinih:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBINIH) clean install
 
+.PHONY: fdt
 #H Build the flattened device tree.
 fdt:
 	make PREFIX=$(PREFIX) CPP=arm-rtems5-cpp -C fdt clean all
@@ -125,14 +138,17 @@ endif
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
 	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j$(NUMCORE)
 
+.PHONY: demo
 #H Build the demo application.
 demo:
 	make -C demo
 
+.PHONY: demo-clean
 #H Clean the demo application.
 demo-clean:
 	make -C demo clean
 
+.PHONY: shell
 #H Start a shell with the environment for building for example the RTEMS BSP.
 shell:
 	$(SHELL)
