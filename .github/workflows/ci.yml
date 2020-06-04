@@ -48,3 +48,7 @@ jobs:
         shell: bash
         run: |
           make demo
+      - name: Build OpenOCD
+        shell: bash
+        run: |
+          make openocd
