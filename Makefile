@@ -1,8 +1,12 @@
 # Note: $(PWD) doesn't work together with -C option of make.
+
+.PHONY: all clean test
+
 MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ARCH = arm
 BSP = imx7
+TARGET = $(ARCH)-rtems5
 PREFIX = $(MAKEFILE_DIR)/rtems/5
 RSB = $(MAKEFILE_DIR)/external/rtems-source-builder
 SRC_LIBBSD = $(MAKEFILE_DIR)/external/rtems-libbsd
@@ -15,6 +19,19 @@ BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
 BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
+
+GRISP_TOOLCHAIN_REVISION = $(shell git rev-parse HEAD)
+GRISP_TOOLCHAIN_PLATFORM = grisp2
+define GRISP_BUILDINFO_C
+#define GRISP_TOOLCHAIN_REVISION "$(GRISP_TOOLCHAIN_REVISION)"
+#define GRISP_TOOLCHAIN_PLATFORM "$(GRISP_TOOLCHAIN_PLATFORM)"
+endef
+export GRISP_BUILDINFO_C
+define GRISP_BUILDINFO_ERL
+-define(GRISP_TOOLCHAIN_REVISION, "$(GRISP_TOOLCHAIN_REVISION)").
+-define(GRISP_TOOLCHAIN_PLATFORM, "$(GRISP_TOOLCHAIN_PLATFORM)").
+endef
+export BUILDINFO_ERL
 
 UNAME := $(shell uname -s)
 
@@ -38,28 +55,32 @@ OPTIMIZATION = 2
 EXTRA_BSP_OPTS =
 endif
 
-.PHONY: fdt demo demo-clean
 
 export ORGPATH := $(PATH)
 export PATH := $(PREFIX)/bin:$(PATH)
 export CFLAGS_OPTIMIZE_V ?= -O$(OPTIMIZATION) -g -ffunction-sections -fdata-sections
 
+.PHONY: help
 #H Show this help.
 help:
 	@grep -v grep $(MAKEFILE_LIST) | grep -A1 -h "#H" | sed -e '1!G;h;$$!d' -e 's/:[^\n]*\n/:\n\t/g' -e 's/#H//g' | grep -v -- --
 
+.PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain libtool bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
+install: submodule-update toolchain toolchain-revision bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
 
+.PHONY: submodule-update
 #H Update the submodules.
 submodule-update:
 	git submodule update --init
 	cd $(SRC_LIBBSD) && git submodule update --init rtems_waf
 
+.PHONY: bootstrap
 #H Run bootstrap for RTEMS.
 bootstrap:
 	cd $(SRC_RTEMS) && $(RSB)/source-builder/sb-bootstrap
 
+.PHONY: toolchain
 #H Build and install the toolchain.
 toolchain:
 	rm -rf $(RSB)/rtems/build
@@ -69,6 +90,18 @@ toolchain:
 	    5/rtems-$(ARCH)
 	rm -rf $(RSB)/rtems/build
 
+.PHONY: toolchain-revision
+#H Create toolchain revision files
+toolchain-revision:
+	echo "${GRISP_TOOLCHAIN_REVISION}" > "${PREFIX}/GRISP_TOOLCHAIN_REVISION"
+	echo "${GRISP_TOOLCHAIN_PLATFORM}" > "${PREFIX}/GRISP_TOOLCHAIN_PLATFORM"
+	echo "" > "${PREFIX}/${TARGET}/${BSP}/lib/include/grisp/grisp-buildinfo.h"
+	echo "$$GRISP_BUILDINFO_C" > \
+		"${PREFIX}/${TARGET}/${BSP}/lib/include/grisp/grisp-buildinfo.h"
+	echo "$$GRISP_BUILDINFO_ERL" > \
+		"${PREFIX}/grisp_buildinfo.hrl"
+
+.PHONY: bsp
 #H Build the RTEMS board support package.
 bsp:
 	rm -rf $(BUILD_BSP)
@@ -89,6 +122,7 @@ bsp:
 	cd $(BUILD_BSP) && make -j $(NUMCORE)
 	cd $(BUILD_BSP) && make -j $(NUMCORE) install
 
+.PHONY: bsp.mk
 #H Build a Makefile helper for the applications.
 bsp.mk: $(PREFIX)/make/custom/$(BSP).mk
 $(PREFIX)/make/custom/$(BSP).mk: src/bsp.mk
@@ -98,6 +132,7 @@ $(PREFIX)/make/custom/$(BSP).mk: src/bsp.mk
 	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
 	    > $@
 
+.PHONY: libbsd
 #H Build and install libbsd.
 libbsd:
 	rm -rf $(SRC_LIBBSD)/build
@@ -110,17 +145,20 @@ libbsd:
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
 
+.PHONY: libgrisp
 #H Build and install libgrisp.
 libgrisp:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBGRISP) install
 
+.PHONY: libinih
 #H Build and install libinih
 libinih:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBINIH) clean install
 
+.PHONY: fdt
 #H Build the flattened device tree.
 fdt:
-	make PREFIX=$(PREFIX) CPP=arm-rtems5-cpp -C fdt clean all
+	make PREFIX=$(PREFIX) CPP=$(TARGET)-cpp -C fdt clean all
 
 .PHONY: barebox
 #H Build the bootloader
@@ -130,8 +168,9 @@ ifneq ($(UNAME),Linux)
 endif
 	cd $(SRC_BAREBOX) && rm -f .config
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
-	cd $(SRC_BAREBOX) && make ARCH=arm CROSS_COMPILE=arm-rtems5- -j$(NUMCORE)
+	cd $(SRC_BAREBOX) && make ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- -j$(NUMCORE)
 
+.PHONY: openocd
 #H Build OpenOCD for debugging
 openocd:
 	# Note: Use a hack to _not_ use the RTEMS tools environment. The RTEMS
@@ -175,14 +214,17 @@ openocd:
 	    --disable-werror
 	cd $(SRC_OPENOCD) && PATH=$(ORGPATH) make -j$(NUMCORE) install
 
+.PHONY: demo
 #H Build the demo application.
 demo:
 	make -C demo
 
+.PHONY: demo-clean
 #H Clean the demo application.
 demo-clean:
 	make -C demo clean
 
+.PHONY: shell
 #H Start a shell with the environment for building for example the RTEMS BSP.
 shell:
 	$(SHELL)
