@@ -30,10 +30,19 @@ Building the toolchain on macOS requires the following dependencies:
 * `dtc`
 * `u-boot-tools`
 
+Building OpenOCD additionally requires
+
+* `autoconf`
+* `automake`
+* `libtool`
+* `libusb`
+* `pkg-config`
+
 **Install with Homebrew**
 
 ```
 brew install dtc u-boot-tools
+brew install autoconf automake libtool libusb pkg-config
 ```
 
 #### Ubuntu
@@ -49,10 +58,14 @@ Building the toolchain on Ubuntu requires the following packages:
 * `u-boot-tools`
 * `lzop`
 
+Building OpenOCD additionally requires
+
+* `libusb-1.0-0-dev`
+
 **Install with apt-get**
 
 ```
-sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools
+sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools lzop libusb-1.0-0-dev
 ```
 
 ### Building
@@ -142,8 +155,7 @@ compatible to a [Floss-JTAG][3] supported by OpenOCD. The following text shows
 how to use that on-board solution.
 
 First build and install OpenOCD by running `make submodule-update` (if you
-havn't build the toolchain before) and `make openocd`. Prerequisites for
-building OpenOCD are: `autoconf`, `automake`, `libtool` and `libusb-1_0-devel`.
+havn't build the toolchain before) and `make openocd`.
 
 Make sure that your GRiSP2 starts some sample application with a sane FDT. The
 debugger scripts will wait till the bootloader loads the FDT and the application
