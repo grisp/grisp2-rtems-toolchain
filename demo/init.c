@@ -141,14 +141,22 @@ create_wlandev(void)
 static void
 led_task(rtems_task_argument arg)
 {
-	bool state = false;
+	unsigned state = 0;
 
 	(void)arg;
 
 	while(true) {
-		state = !state;
-		grisp_led_set1(!state, !state, state);
-		grisp_led_set2(state, state, !state);
+		bool r1 = (state & (1 << 0)) != 0;
+		bool g1 = (state & (1 << 1)) != 0;
+		bool b1 = (state & (1 << 2)) != 0;
+		state += 1;
+		bool r2 = (state & (1 << 0)) != 0;
+		bool g2 = (state & (1 << 1)) != 0;
+		bool b2 = (state & (1 << 2)) != 0;
+
+		grisp_led_set1(r1, g1, b1);
+		grisp_led_set2(r2, g2, b2);
+
 		rtems_task_wake_after(RTEMS_MILLISECONDS_TO_TICKS(250));
 	}
 }
