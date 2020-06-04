@@ -52,6 +52,7 @@
 #include "sd-card-test.h"
 #include "i2c.h"
 #include "spi.h"
+#include "1wire.h"
 
 #define STACK_SIZE_INIT_TASK	(64 * 1024)
 #define STACK_SIZE_SHELL	(64 * 1024)
@@ -328,7 +329,8 @@ Init(rtems_task_argument arg)
   &shell_SPI_Command, \
   &shell_I2CDETECT_Command, \
   &shell_I2CGET_Command, \
-  &shell_I2CSET_Command
+  &shell_I2CSET_Command, \
+  &shell_1wiretemp_command
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 
