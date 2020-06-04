@@ -83,6 +83,7 @@ bootstrap:
 .PHONY: toolchain
 #H Build and install the toolchain.
 toolchain:
+	mkdir -p $(BUILD_LOGS)
 	rm -rf $(RSB)/rtems/build
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
 	    --prefix=$(PREFIX) \
