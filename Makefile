@@ -94,8 +94,10 @@ toolchain:
 .PHONY: toolchain-revision
 #H Create toolchain revision files
 toolchain-revision:
+	mkdir -p ${PREFIX}
 	echo "${GRISP_TOOLCHAIN_REVISION}" > "${PREFIX}/GRISP_TOOLCHAIN_REVISION"
 	echo "${GRISP_TOOLCHAIN_PLATFORM}" > "${PREFIX}/GRISP_TOOLCHAIN_PLATFORM"
+	mkdir -p ${PREFIX}/${TARGET}/${BSP}/lib/include/grisp
 	echo "" > "${PREFIX}/${TARGET}/${BSP}/lib/include/grisp/grisp-buildinfo.h"
 	echo "$$GRISP_BUILDINFO_C" > \
 		"${PREFIX}/${TARGET}/${BSP}/lib/include/grisp/grisp-buildinfo.h"
