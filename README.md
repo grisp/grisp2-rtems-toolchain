@@ -168,7 +168,30 @@ the process. You can then start a gdb that connects to the server using
 command to the normal gdb that restarts the target and reloads the application.
 Note that for bigger applications, that might need quite some time.
 
+## Boot Loader Recovery
+
+For some reason the boot loader has been damaged on your system? Here is the
+solution:
+
+* Build the `imx_uart` tool with `make imx_uart`.
+* Set the `BOOT_MODE` Jumpers on your GRiSP2 so that the serial download mode
+  will be started.
+* Prepare to execute the following command. Don't execute it yet. Replace the
+  `picocom ...` part with your preferred serial terminal application.
+
+```
+./rtems/5/bin/imx_uart -nN ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec-phycore-imx6ull-grisp2.img && picocom -l -b 115200 /dev/ttyGRiSP
+```
+
+* Power-Cycle or Power up the GRiSP2. A reset is not enough!
+* Press the reset button and execute the prepared command in the next seconds.
+* Wait till `imx_uart` finishes and a `barebox` starts.
+* Interrupt the `barebox` start when it tells you to
+  `Hit m for menu or any to stop autoboot:    1`
+* Continue with the steps from the section [Writing an Image to eMMC][5].
+
 [1]: https://apps.apple.com/de/app/xcode/id497799835
 [2]: https://developer.apple.com/library/archive/technotes/tn2339/_index.html
 [3]: https://github.com/esden/floss-jtag
 [4]: http://infocenter.arm.com/help/topic/com.arm.doc.faqs/attached/13634/cortex_debug_connectors.pdf
+[5]: #writing-an-image-to-emmc

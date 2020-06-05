@@ -54,3 +54,7 @@ jobs:
         shell: bash
         run: |
           make openocd
+      - name: Build imx_uart
+        shell: bash
+        run: |
+          make imx_uart

@@ -15,6 +15,7 @@ SRC_LIBGRISP = $(MAKEFILE_DIR)/external/libgrisp
 SRC_LIBINIH = $(MAKEFILE_DIR)/external/libinih
 SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
+SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
 BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
@@ -172,6 +173,7 @@ endif
 	cd $(SRC_BAREBOX) && rm -f .config
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
 	cd $(SRC_BAREBOX) && make ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- -j$(NUMCORE)
+	cp $(SRC_BAREBOX)/images/barebox-phytec-phycore-imx6ull-grisp2.img barebox
 
 .PHONY: openocd
 #H Build OpenOCD for debugging
@@ -216,6 +218,15 @@ openocd:
 	    --disable-remote-bitbang \
 	    --disable-werror
 	cd $(SRC_OPENOCD) && PATH=$(ORGPATH) make -j$(NUMCORE) install
+
+.PHONY: imx_uart
+#H Build the imx_uart tool for loading a bootloader
+imx_uart:
+	make -C $(SRC_IMX_USB_LOADER) imx_uart
+	mkdir -p '$(PREFIX)/etc/imx-loader.d'
+	install -m644 $(SRC_IMX_USB_LOADER)/mx6ull_usb_work.conf '$(PREFIX)/etc/imx-loader.d/'
+	mkdir -p '$(PREFIX)/bin'
+	install -m755 $(SRC_IMX_USB_LOADER)/imx_uart '$(PREFIX)/bin/imx_uart'
 
 .PHONY: demo
 #H Build the demo application.
