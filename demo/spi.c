@@ -51,7 +51,7 @@ command_spi(int argc, char *argv[])
 		.tx_buf = buffer,
 		.speed_hz = 100000,
 		.bits_per_word = 8,
-		.mode = SPI_MODE_0,
+		.mode = SPI_MODE_0 | SPI_NO_CS,
 	};
 
 	for (i = 1; i < argc; ++i) {
@@ -63,6 +63,16 @@ command_spi(int argc, char *argv[])
 			case ('o'):
 				msg.mode |= SPI_LOOP;
 				break;
+			case ('0'):
+				/* fallthrough */
+			case ('1'):
+				/* fallthrough */
+			case ('2'):
+				/* fallthrough */
+			case ('3'):
+				msg.mode &= (unsigned) ~SPI_NO_CS;
+				msg.cs = (uint8_t) (argv[i][1] - '0');
+				break;
 			case ('h'):
 				/* fallthrough */
 			default:
@@ -70,6 +80,10 @@ command_spi(int argc, char *argv[])
 				    "%s [-lh] SPI_BUS xx [xx [..]]\n"
 				    "    SPI_BUS  Bus device to use\n"
 				    "    xx       Hex value of a byte to send\n"
+				    "    -0       Use chip select 0 (default: None)\n"
+				    "    -1       Use chip select 1 (default: None)\n"
+				    "    -2       Use chip select 2 (default: None)\n"
+				    "    -3       Use chip select 3 (default: None)\n"
 				    "    -l       Send LSB first\n"
 				    "    -o       Use loopback mode\n"
 				    "    -h       Print this help\n", argv[0]);

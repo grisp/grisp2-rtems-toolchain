@@ -21,3 +21,6 @@
 [submodule "external/inih"]
 	path = external/libinih/inih
 	url = https://github.com/grisp/inih.git
+[submodule "external/openocd-code"]
+	path = external/openocd-code
+	url = https://git.code.sf.net/p/openocd/code
