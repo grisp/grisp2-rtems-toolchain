@@ -154,6 +154,7 @@ led_task(rtems_task_argument arg)
 		bool g2 = (state & (1 << 1)) != 0;
 		bool b2 = (state & (1 << 2)) != 0;
 
+		grisp_led_set_som((state & 1) != 0);
 		grisp_led_set1(r1, g1, b1);
 		grisp_led_set2(r2, g2, b2);
 
