@@ -177,13 +177,15 @@
 
 &usdhc2 {
 	pinctrl-names = "default";
+#ifdef GRISP_IMX6ULL_Y0
 	pinctrl-0 = <&pinctrl_usdhc2_grisp>;
 	bus-width = <8>;
 	max-frequency = <50000000>;
 	no-1-8-v;
+	cap-mmc-hw-reset;
+#endif
 	non-removable;
 	wakeup-source;
-	cap-mmc-hw-reset;
 	status = "okay";
 };
 
@@ -253,6 +255,7 @@
 		>;
 	};
 
+#ifdef GRISP_IMX6ULL_Y0
 	/delete-node/ pinctrl_usdhc2;
 
 	pinctrl_usdhc2_grisp: usdhc2-grp {
@@ -270,6 +273,7 @@
 			MX6UL_PAD_LCD_DATA17__USDHC2_DATA7	0x17059
 		>;
 	};
+#endif
 
 	/delete-node/ gpioledssomgrp;
 
