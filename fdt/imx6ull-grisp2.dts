@@ -3,7 +3,7 @@
  * Copyright (C) 2020 embedded brains GmbH.
  */
 
-#define GRISP_IMX6ULL_Y0
+#undef GRISP_IMX6ULL_Y0
 
 /dts-v1/;
 #include "imx6ull.dtsi"
