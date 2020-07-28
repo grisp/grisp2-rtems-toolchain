@@ -1,5 +1,5 @@
 MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
-RTEMS_ROOT ?= $(MAKEFILE_DIR)/../rtems/5
+RTEMS_ROOT ?= $(MAKEFILE_DIR)/../rtems/6
 RTEMS_BSP ?= imx7
 
 include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).mk
