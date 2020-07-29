@@ -35,9 +35,9 @@
 extern "C" {
 #endif /* __cplusplus */
 
-rtems_shell_cmd_t shell_I2CDETECT_Command;
-rtems_shell_cmd_t shell_I2CGET_Command;
-rtems_shell_cmd_t shell_I2CSET_Command;
+extern rtems_shell_cmd_t shell_I2CDETECT_Command;
+extern rtems_shell_cmd_t shell_I2CGET_Command;
+extern rtems_shell_cmd_t shell_I2CSET_Command;
 
 #ifdef __cplusplus
 }

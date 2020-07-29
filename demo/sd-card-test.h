@@ -35,8 +35,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
-rtems_shell_cmd_t rtems_shell_PATTERN_FILL_Command;
-rtems_shell_cmd_t rtems_shell_PATTERN_CHECK_Command;
+extern rtems_shell_cmd_t rtems_shell_PATTERN_FILL_Command;
+extern rtems_shell_cmd_t rtems_shell_PATTERN_CHECK_Command;
 
 #ifdef __cplusplus
 }
