@@ -35,7 +35,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-rtems_shell_cmd_t shell_SPI_Command;
+extern rtems_shell_cmd_t shell_SPI_Command;
 
 #ifdef __cplusplus
 }
