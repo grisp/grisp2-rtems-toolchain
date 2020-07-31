@@ -6,7 +6,7 @@ MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ARCH = arm
 BSP = imx7
-RTEMS_VERSION = 6
+RTEMS_VERSION = 5
 TARGET = $(ARCH)-rtems$(RTEMS_VERSION)
 PREFIX = $(MAKEFILE_DIR)/rtems/$(RTEMS_VERSION)
 RSB = $(MAKEFILE_DIR)/external/rtems-source-builder
@@ -147,7 +147,7 @@ libbsd:
 	    --enable-warnings \
 	    --optimization=$(OPTIMIZATION) \
 	    --buildset=$(LIBBSD_BUILDSET) \
-	    --rtems-version=6
+	    --rtems-version=$(RTEMS_VERSION)
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
 
