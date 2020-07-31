@@ -127,20 +127,28 @@ One way to write an Image to eMMC is via the bootloader:
 
 1. Prepare an image to write on your PC. That can be a raw image copied from an
    SD card or created with a loop-device on a Linux PC. Make sure that the image
-   isn't too big. It has to fit into the RAM of the bootloader. Copy it to your
-   tftp server directory with some simple name (e.g. `grisp2.img`).
+   isn't too big (images >2GB maybe don't work depending on your tftp server).
+   Also make sure that it has a `barebox` bootloader at the beginning (see (eMMC
+   Image)[6]. The simplest possible image is to use the
+   `barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img` directly.
+1. Copy it to your tftp server directory with some simple name (e.g.
+   `grisp2.img`).
 1. Connect the network cable and power up the GRiSP2.
 1. Interrupt the boot loader when it outputs the `Hit m for menu or any key to
-   stop autoboot:` line. You should drop into a shell with a `barebox@GRiSP2:/`
-   prompt.
+   stop autoboot:` line. You should drop into a shell with a
+   `barebox@PHYTEC phyCORE-i.MX6 ULL SOM with eMMC:/` prompt.
 1. Type `mmc1.probe=1` to start the eMMC detection.
 1. Type `dhcp` to get an IP address.
-1. Type `tftp grisp.img`. If that doesn't work your server might hasn't been
-   announced. In that case use a command like
-   `global dev.eth0.serverip=172.24.0.99` to explicitly set your server and
-   retry the tftp command.
-1. Write the image to the emmc using `cp grisp.img /dev/mmc1`. Wait till the
-   image is written.
+1. Now you have two alternatives. For both: If your tftp server isn't announced
+   via DHCP use `global dev.eth0.serverip=172.24.0.99` to explicitly set your
+   server.
+    1. For small images that fit into RAM: Type `tftp grisp2.img` and write the
+       received image to the eMMC with `cp grisp2.img /dev/mmc1`.
+    1. For big images: Directly copy from the mount point for the tftp server.
+       Note that tftp don's support listing files. Therefore a ls won't show you
+       what's on the server. As long as there isn't an error, the tftp is
+       mounted anyway. Use `cp /mnt/tftp/grisp2.img /dev/mmc1` for this method.
+1. Wait for the image to be written. That can need quite some time.
 1. Reset the system with `reset` on the shell. Barebox should now boot your
    application.
 
@@ -190,8 +198,37 @@ solution:
   `Hit m for menu or any to stop autoboot:    1`
 * Continue with the steps from the section [Writing an Image to eMMC][5].
 
+## eMMC Image
+
+The eMMC has to contain the `barebox` bootloader. Basically that means that you
+copy the image from `barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img` to
+address 0x0 of your image before you create your partitions. Otherwise there is
+nothing special when creating the image.
+
+The following is an example for creating an SD image with Linux. Please be
+careful when partitioning the file and double or better tripple check that
+everything is set up correctly with the loop device and that you use the correct
+loop device. Otherwise you might destroy your Linux installation with these
+commands.
+
+```
+dd if=/dev/zero of=grisp2.img bs=1M count=128
+dd if=barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img of=grisp2.img conv=notrunc
+sudo modprobe loop
+sudo losetup /dev/loop4 grisp2.img
+echo 'type=83' | sudo sfdisk /dev/loop4
+sudo partprobe /dev/loop4
+sudo mkfs.vfat -n "GRISP2" /dev/loop4p1
+sudo mount /dev/loop4p1 some/mount/point
+sudo cp demo/b-imx7/demo.zImage some/mount/point/zImage
+sudo cp fdt/b-dtb/imx6ull-grisp2.dtb some/mount/point/oftre
+sudo umount some/mount/point
+sudo losetup -d /dev/loop4
+```
+
 [1]: https://apps.apple.com/de/app/xcode/id497799835
 [2]: https://developer.apple.com/library/archive/technotes/tn2339/_index.html
 [3]: https://github.com/esden/floss-jtag
 [4]: http://infocenter.arm.com/help/topic/com.arm.doc.faqs/attached/13634/cortex_debug_connectors.pdf
 [5]: #writing-an-image-to-emmc
+[6]: #emmc-image
