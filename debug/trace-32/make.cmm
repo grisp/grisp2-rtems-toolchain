@@ -2,6 +2,8 @@
 &BSP="imx7"
 
 &APPLICATION_FILE="../../demo/b-&BSP/demo.exe"
+&FDT="../../fdt/b-dtb/imx6ull-grisp2.dtb"
+&FDTADDR=0x82310000
 
 global &initialized
 
@@ -32,6 +34,13 @@ break 0x80200000
 go.direct
 wait !run()
 
+if "&FDT"!=""
+(
+	data.LOAD.binary "&FDT" &FDTADDR
+	register.set R2 &FDTADDR
+	register.set R4 &FDTADDR
+	register.set R6 &FDTADDR
+)
 data.load "&APPLICATION_FILE"
 sYmbol.NEW.FUNCTION _CPU_Context_switch y.begin(_CPU_Context_switch)--y.begin(_CPU_Context_restore)
 
