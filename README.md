@@ -188,7 +188,7 @@ solution:
   `picocom ...` part with your preferred serial terminal application.
 
 ```
-./rtems/5/bin/imx_uart -nN ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec-phycore-imx6ull-grisp2.img && picocom -l -b 115200 /dev/ttyGRiSP
+./rtems/5/bin/imx_uart -nN /dev/ttyGRiSP ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec-phycore-imx6ull-grisp2.img && picocom -l -b 115200 /dev/ttyGRiSP
 ```
 
 * Power-Cycle or Power up the GRiSP2. A reset is not enough!
