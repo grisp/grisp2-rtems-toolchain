@@ -70,6 +70,8 @@ check_and_process_params(
 
 	if (argc > 4) {
 		*start_value = strtoul(argv[4], NULL, 0);
+	} else {
+		*start_value = 0;
 	}
 
 	if (short_output != NULL && max_errors != NULL) {
