@@ -53,12 +53,14 @@ check_and_process_params(
 	uint8_t **block,
 	uint8_t **read_block,
 	int *max_errors,
-	bool *short_output
+	bool *short_output,
+	uint32_t *start_value
 )
 {
 	if (argc < 4) {
-		printf("Use with %s <file> <size> <block_size> [<output>]\n"
+		printf("Use with %s <file> <size> <block_size> [<start_value> [<output>]]\n"
 		    "    <size> and <block_size> is in bytes\n"
+		    "    <start_value> start with this counter value\n"
 		    "    <output>: Only relevant for check. Can be: \n"
 		    "              <nr>: print the first <nr> errors\n"
 		    "              \"short\": Print all errors but short form\n",
@@ -66,15 +68,19 @@ check_and_process_params(
 		return -1;
 	}
 
+	if (argc > 4) {
+		*start_value = strtoul(argv[4], NULL, 0);
+	}
+
 	if (short_output != NULL && max_errors != NULL) {
 		*short_output = false;
 		*max_errors = 1;
-		if (argc > 4) {
-			if (strcmp("short", argv[4]) == 0) {
+		if (argc > 5) {
+			if (strcmp("short", argv[5]) == 0) {
 				*max_errors = -1;
 				*short_output = true;
 			} else {
-				*max_errors = strtol(argv[4], NULL, 0);
+				*max_errors = strtol(argv[5], NULL, 0);
 				if (*max_errors <= 0) {
 					warn("Can't use <output> parameter.");
 					return -1;
@@ -171,16 +177,19 @@ command_pattern_fill(int argc, char *argv[])
 	size_t size;
 	size_t block_size;
 	uint8_t *block;
+	uint32_t start_value;
 	int rv;
 
 	rv = check_and_process_params(argc, argv, O_WRONLY | O_CREAT,
-	    &fd, &size, &block_size, &block, NULL, NULL, NULL);
+	    &fd, &size, &block_size, &block, NULL, NULL, NULL, &start_value);
 	if (rv != 0) {
 		warnx("Error while processing parameters.\n");
 		return rv;
 	}
 
-	for (size_t current = 0; current < size; current += block_size) {
+	for (size_t current = start_value;
+	    current < start_value + size;
+	    current += block_size) {
 		size_t write_size = MIN(block_size, size-current);
 		ssize_t written;
 		fill_block(block, write_size, current);
@@ -222,16 +231,19 @@ command_pattern_check(int argc, char *argv[])
 	int max_errors;
 	bool short_output;
 	bool last_was_error = false;
+	uint32_t start_value;
 
 	rv = check_and_process_params(argc, argv, O_RDONLY,
 	    &fd, &size, &block_size, &block, &read_block,
-	    &max_errors, &short_output);
+	    &max_errors, &short_output, &start_value);
 	if (rv != 0) {
 		warnx("Error while processing parameters.\n");
 		return rv;
 	}
 
-	for (size_t current = 0; current < size; current += block_size) {
+	for (size_t current = start_value;
+	    current < size + start_value;
+	    current += block_size) {
 		size_t read_size = MIN(block_size, size-current);
 		ssize_t received;
 		fill_block(block, read_size, current);
@@ -274,7 +286,7 @@ command_pattern_check(int argc, char *argv[])
 rtems_shell_cmd_t rtems_shell_PATTERN_FILL_Command = {
 	.name = "pattern-fill",
 	.usage = "CAUTION: This command is destructive.\n"
-	    "Use with: pattern-fill <file> <size> <block_size>",
+	    "Use with: pattern-fill <file> <size> <block_size> [<start_value>]",
 	.topic = "SDtest",
 	.command = command_pattern_fill,
 	.alias = NULL,
@@ -286,7 +298,7 @@ rtems_shell_cmd_t rtems_shell_PATTERN_FILL_Command = {
 
 rtems_shell_cmd_t rtems_shell_PATTERN_CHECK_Command = {
 	.name = "pattern-check",
-	.usage = "Use with: pattern-check <file> <size> <block_size>",
+	.usage = "Use with: pattern-check <file> <size> <block_size> [<start_value> [<output>]]",
 	.topic = "SDtest",
 	.command = command_pattern_check,
 	.alias = NULL,
@@ -301,7 +313,7 @@ int
 main(int argc, char *argv[])
 {
 	if (argc < 2 || strcmp(argv[1], "-h") == 0) {
-		printf("Use with: %s [fill|check] <file> <size> <block_size>\n",
+		printf("Use with: %s [fill|check] <file> <size> <block_size> [<start_value> [<output>]]\n",
 		    argv[0]);
 		return -1;
 	}
