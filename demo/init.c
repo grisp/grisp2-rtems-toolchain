@@ -42,7 +42,6 @@
 #include <rtems/shell.h>
 #include <rtems/stringto.h>
 #include <rtems/ftpd.h>
-#include <rtems/recorddump.h>
 #include <machine/rtems-bsd-commands.h>
 
 #include <bsp.h>
@@ -212,29 +211,6 @@ rtems_shell_cmd_t rtems_shell_STARTFTP_Command = {
 	0, 0, 0
 };
 
-static int
-command_dumprecord(int argc, char *argv[])
-{
-	rtems_status_code sc;
-	static rtems_record_dump_base64_zlib_context context;
-
-	printk( "\n*** BEGIN OF RECORDS BASE64 ZLIB ***\n" );
-	rtems_record_dump_zlib_base64(&context, rtems_put_char, NULL);
-	printk( "\n*** END OF RECORDS BASE64 ZLIB ***\n" );
-
-	return 0;
-}
-
-rtems_shell_cmd_t rtems_shell_DUMPRECORD_Command = {
-	"dumprecord",          /* name */
-	"dumprecord",          /* usage */
-	"app",                 /* topic */
-	command_dumprecord,    /* command */
-	NULL,                  /* alias */
-	NULL,                  /* next */
-	0, 0, 0
-};
-
 static void
 Init(rtems_task_argument arg)
 {
@@ -319,10 +295,6 @@ Init(rtems_task_argument arg)
 
 //#define CONFIGURE_STACK_CHECKER_ENABLED
 
-#define CONFIGURE_RECORD_EXTENSIONS_ENABLED
-#define CONFIGURE_RECORD_PER_PROCESSOR_ITEMS (64 * 1024)
-#define CONFIGURE_RECORD_FATAL_DUMP_BASE64_ZLIB
-
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_INIT
 
@@ -354,7 +326,6 @@ Init(rtems_task_argument arg)
   &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
   &rtems_shell_PATTERN_FILL_Command, \
   &rtems_shell_PATTERN_CHECK_Command, \
-  &rtems_shell_DUMPRECORD_Command, \
   &shell_SPI_Command, \
   &shell_I2CDETECT_Command, \
   &shell_I2CGET_Command, \
