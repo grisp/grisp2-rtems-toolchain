@@ -27,13 +27,16 @@
 
 #include <rtems.h>
 #include <rtems/shell.h>
+#include <bsp/fdt.h>
 #include <bsp/imx-gpio.h>
 
 #include <assert.h>
 #include <dev/spi/spi.h>
 #include <err.h>
 #include <fcntl.h>
+#include <libfdt.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "pmod_rfid.h"
@@ -155,6 +158,7 @@ struct pmod_rfid_ctx {
 		VERBOSE_ALL,
 	} verbose;
 	struct imx_gpio_pin led;
+	bool led_detection;
 } context;
 
 static struct pmod_rfid_ctx *
@@ -251,6 +255,16 @@ pmod_rfid_check_irq_status(
 		}
 	}
 	return error;
+}
+
+static void
+pmod_rfid_led_off(struct pmod_rfid_ctx *ctx) {
+	imx_gpio_set_output(&ctx->led, 1);
+}
+
+static void
+pmod_rfid_led_on(struct pmod_rfid_ctx *ctx) {
+	imx_gpio_set_output(&ctx->led, 0);
 }
 
 static int
@@ -460,9 +474,15 @@ pmod_rfid_cmd_detect_func(int argc, char **argv)
 			    VERBOSE_MORE);
 		}
 		if ((irq_status & TRF7970_IRQ_SRX) == 0) {
+			if (ctx->led_detection) {
+				pmod_rfid_led_off(ctx);
+			}
 			verb_print(ctx, VERBOSE_FEW, "\r%c No tag      ",
 			    indicator[act_index]);
 		} else {
+			if (ctx->led_detection) {
+				pmod_rfid_led_on(ctx);
+			}
 			verb_print(ctx, VERBOSE_FEW, "\r%c Tag detected",
 			    indicator[act_index]);
 		}
@@ -513,22 +533,72 @@ static rtems_shell_cmd_t pmod_rfid_cmd_verbose = {
 	.command = pmod_rfid_cmd_verbose_func,
 };
 
-static void
-pmod_rfid_init_led(struct pmod_rfid_ctx *ctx) {
-	/* TODO */
+static int
+pmod_rfid_cmd_led_func(int argc, char **argv)
+{
+	struct pmod_rfid_ctx *ctx = pmod_rfid_get_context();
+
+	if (argc < 2) {
+		printf("Should the LED be 'on', 'off' or detection based ('detect')?\n");
+	} else {
+		if (strcmp(argv[1], "on") == 0) {
+			pmod_rfid_led_on(ctx);
+			ctx->led_detection = false;
+		} else if (strcmp(argv[1], "off") == 0) {
+			pmod_rfid_led_off(ctx);
+			ctx->led_detection = false;
+		} else if (strcmp(argv[1], "detect") == 0) {
+			ctx->led_detection = true;
+		}
+	}
+
+	return 0;
+}
+
+static rtems_shell_cmd_t pmod_rfid_cmd_led = {
+	.name = "rfid_led",
+	.usage = "rfid_led [on|off|detect]\n"
+	    "Set LED function.\n",
+	.topic = "rfid",
+	.command = pmod_rfid_cmd_led_func,
+};
+
+static rtems_status_code
+pmod_rfid_init_led(struct pmod_rfid_ctx *ctx)
+{
+	rtems_status_code sc;
+	int node;
+	const char *path;
+	const void *fdt;
+
+	fdt = bsp_fdt_get();
+
+	/* Quick and dirty way to get the pin. */
+	path = fdt_get_alias(fdt, "spi0");
+	if (path == 0) {
+		return RTEMS_UNSATISFIED;
+	}
+	node = fdt_path_offset(fdt, path);
+	sc = imx_gpio_init_from_fdt_property(&ctx->led,
+	    node, "cs-gpios", IMX_GPIO_MODE_OUTPUT, 3);
+	ctx->led_detection = true;
+
+	return sc;
 }
 
 void
 pmod_rfid_init(const char *spi_bus, uint8_t cs) {
 	struct pmod_rfid_ctx *ctx = pmod_rfid_get_context();
 	rtems_shell_cmd_t *cmd;
+	rtems_status_code sc;
 
 	ctx->initialized = false;
 	ctx->cs = cs;
 	ctx->verbose = VERBOSE_FEW;
 	ctx->bus = open(spi_bus, O_RDWR);
 	assert(ctx->bus >= 0);
-	pmod_rfid_init_led(ctx);
+	sc = pmod_rfid_init_led(ctx);
+	assert(sc == RTEMS_SUCCESSFUL);
 
 	cmd = rtems_shell_add_cmd_struct(&pmod_rfid_cmd_regdump);
 	assert(cmd == &pmod_rfid_cmd_regdump);
@@ -538,4 +608,6 @@ pmod_rfid_init(const char *spi_bus, uint8_t cs) {
 	assert(cmd == &pmod_rfid_cmd_detect);
 	cmd = rtems_shell_add_cmd_struct(&pmod_rfid_cmd_verbose);
 	assert(cmd == &pmod_rfid_cmd_verbose);
+	cmd = rtems_shell_add_cmd_struct(&pmod_rfid_cmd_led);
+	assert(cmd == &pmod_rfid_cmd_led);
 }
