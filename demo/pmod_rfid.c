@@ -373,14 +373,22 @@ pmod_rfid_cmd_init_func(int argc, char **argv)
 {
 	struct pmod_rfid_ctx *ctx = pmod_rfid_get_context();
 	int error = 0;
-
-	(void) argc;
-	(void) argv;
+	bool use_5V = false;
 
 	if (ctx->initialized) {
 		verb_print(ctx, VERBOSE_FEW, "Reinitializing\n");
 		ctx->initialized = false;
 	}
+	if (argc >= 2) {
+		if(strcmp(argv[1], "5") == 0) {
+			use_5V = true;
+			verb_print(ctx, VERBOSE_FEW, "Use 5V\n");
+		} else {
+			printf("Unknown parameter: %s\n", argv[1]);
+			return -1;
+		}
+	}
+
 	if (error == 0) {
 		/* Software reset */
 		uint8_t buf[] = {TRF7970_AC_CMD_SW_INIT};
@@ -404,6 +412,9 @@ pmod_rfid_cmd_init_func(int argc, char **argv)
 		    TRF7970_STAT_CTRL_RF_ON
 		    };
 		verb_print(ctx, VERBOSE_SOME, "Setup status control\n");
+		if (use_5V) {
+			buf[1] |= TRF7970_STAT_CTRL_VRS5_3;
+		}
 		error = pmod_rfid_transfer(ctx, buf, NULL, sizeof(buf));
 	}
 	if (error == 0) {
@@ -453,8 +464,9 @@ pmod_rfid_cmd_init_func(int argc, char **argv)
 
 static rtems_shell_cmd_t pmod_rfid_cmd_init = {
 	.name = "rfid_init",
-	.usage = "rfid_init\n"
-	    "Initialize the TRF7970A.\n",
+	.usage = "rfid_init [5]\n"
+	    "Initialize the TRF7970A.\n"
+	    "With argument 5: Initialize for 5V.\n",
 	.topic = "rfid",
 	.command = pmod_rfid_cmd_init_func,
 };
@@ -472,7 +484,7 @@ pmod_rfid_cmd_detect_func(int argc, char **argv)
 
 	if (!ctx->initialized) {
 		verb_print(ctx, VERBOSE_FEW, "Not yet initialized. Doing that now ...\n");
-		pmod_rfid_cmd_init_func(1, argv);
+		pmod_rfid_cmd_init_func(argc, argv);
 	}
 
 	printf( "Press any key to stop\n" );
