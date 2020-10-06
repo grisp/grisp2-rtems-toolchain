@@ -197,6 +197,8 @@
 		   <&gpio3 10 GPIO_ACTIVE_HIGH>,
 		   <&gpio3 11 GPIO_ACTIVE_HIGH>,
 		   <&gpio3 12 GPIO_ACTIVE_HIGH>;
+
+	grisp,int-gpios = <&gpio4 19 GPIO_ACTIVE_HIGH>;
 };
 
 &iomuxc {

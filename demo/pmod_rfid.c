@@ -166,6 +166,7 @@ struct pmod_rfid_ctx {
 		VERBOSE_ALL,
 	} verbose;
 	struct imx_gpio_pin led;
+	struct imx_gpio_pin interrupt;
 	bool led_detection;
 } context;
 
@@ -214,7 +215,7 @@ pmod_rfid_transfer(
 		.len = len,
 		.rx_buf = rxbuf,
 		.tx_buf = txbuf,
-		.speed_hz = 100000,
+		.speed_hz = 2000000,
 		.bits_per_word = 8,
 		.mode = SPI_MODE_1,
 		.cs = ctx->cs,
@@ -606,7 +607,7 @@ static rtems_shell_cmd_t pmod_rfid_cmd_led = {
 };
 
 static rtems_status_code
-pmod_rfid_init_led(struct pmod_rfid_ctx *ctx)
+pmod_rfid_init_pins(struct pmod_rfid_ctx *ctx)
 {
 	rtems_status_code sc;
 	int node;
@@ -614,16 +615,21 @@ pmod_rfid_init_led(struct pmod_rfid_ctx *ctx)
 	const void *fdt;
 
 	fdt = bsp_fdt_get();
-
-	/* Quick and dirty way to get the pin. */
 	path = fdt_get_alias(fdt, "spi0");
 	if (path == 0) {
 		return RTEMS_UNSATISFIED;
 	}
 	node = fdt_path_offset(fdt, path);
+
+	/* LED is connected to SS3 */
 	sc = imx_gpio_init_from_fdt_property(&ctx->led,
 	    node, "cs-gpios", IMX_GPIO_MODE_OUTPUT, 3);
-	ctx->led_detection = true;
+
+	/* Interrupt pin */
+	/* FIXME: The interrupt pin isn't used yet. Initialization is done so it
+	 * can be checked with a debugger whether the pin works. */
+	sc = imx_gpio_init_from_fdt_property(&ctx->interrupt,
+	    node, "grisp,int-gpios", IMX_GPIO_MODE_INPUT, 0);
 
 	return sc;
 }
@@ -639,8 +645,9 @@ pmod_rfid_init(const char *spi_bus, uint8_t cs) {
 	ctx->verbose = VERBOSE_FEW;
 	ctx->bus = open(spi_bus, O_RDWR);
 	assert(ctx->bus >= 0);
-	sc = pmod_rfid_init_led(ctx);
+	sc = pmod_rfid_init_pins(ctx);
 	assert(sc == RTEMS_SUCCESSFUL);
+	ctx->led_detection = true;
 
 	cmd = rtems_shell_add_cmd_struct(&pmod_rfid_cmd_regdump);
 	assert(cmd == &pmod_rfid_cmd_regdump);
