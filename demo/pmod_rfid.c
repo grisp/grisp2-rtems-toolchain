@@ -105,7 +105,15 @@
 #define TRF7970_MODSCK_PM0			(1 << 0)
 
 #define TRF7970_REG_RX_SPECIAL_SETTING		0x0a
+
 #define TRF7970_REG_REGULATOR_AND_IO_CTRL	0x0b
+#define TRF7970_REGIOCTL_AUTO_REG		(1 << 7)
+#define TRF7970_REGIOCTL_EN_EXT_PA		(1 << 6)
+#define TRF7970_REGIOCTL_IO_LOW			(1 << 5)
+#define TRF7970_REGIOCTL_VRS2			(1 << 2)
+#define TRF7970_REGIOCTL_VRS1			(1 << 1)
+#define TRF7970_REGIOCTL_VRS0			(1 << 0)
+
 #define TRF7970_REG_SPECIAL_FUNC_REG1		0x10
 #define TRF7970_REG_SPECIAL_FUNC_REG2		0x11
 #define TRF7970_REG_ADJUSTABLE_FIFO_IRQ_LVL	0x14
@@ -381,7 +389,13 @@ pmod_rfid_cmd_init_func(int argc, char **argv)
 	}
 	if (error == 0) {
 		uint8_t buf[] = {TRF7970_AC_CMD_IDLE};
-		verb_print(ctx, VERBOSE_SOME, "Wait cycles\n");
+		verb_print(ctx, VERBOSE_SOME, "Wait cycles for reset\n");
+		error = pmod_rfid_transfer(ctx, buf, NULL, sizeof(buf));
+	}
+	rtems_task_wake_after(RTEMS_MILLISECONDS_TO_TICKS(1));
+	if (error == 0) {
+		uint8_t buf[] = {TRF7970_AC_CMD_RESET_FIFO};
+		verb_print(ctx, VERBOSE_SOME, "Reset FIFO\n");
 		error = pmod_rfid_transfer(ctx, buf, NULL, sizeof(buf));
 	}
 	if (error == 0) {
@@ -405,7 +419,23 @@ pmod_rfid_cmd_init_func(int argc, char **argv)
 		    TRF7970_AC_WRITE | TRF7970_REG_MODULAR_AND_SYS_CLK_CTRL,
 		    TRF7970_MODSCK_PM2 | TRF7970_MODSCK_PM1 | TRF7970_MODSCK_PM0
 		    };
-		verb_print(ctx, VERBOSE_SOME, "Setup clock control\n");
+		verb_print(ctx, VERBOSE_SOME, "Setup Modulator and Clock control\n");
+		error = pmod_rfid_transfer(ctx, buf, NULL, sizeof(buf));
+	}
+	if (error == 0) {
+		uint8_t buf[] = {
+		    TRF7970_AC_WRITE | TRF7970_REG_REGULATOR_AND_IO_CTRL,
+		    TRF7970_REGIOCTL_AUTO_REG
+		    };
+		verb_print(ctx, VERBOSE_SOME, "Setup Regulator and I/O Control\n");
+		error = pmod_rfid_transfer(ctx, buf, NULL, sizeof(buf));
+	}
+	if (error == 0) {
+		uint8_t buf[] = {
+		    TRF7970_AC_WRITE | TRF7970_REG_NFC_TARGET_DETECTION_LVL,
+		    0 /* according to data sheet! */
+		    };
+		verb_print(ctx, VERBOSE_SOME, "Set NFC Target detection level to 0\n");
 		error = pmod_rfid_transfer(ctx, buf, NULL, sizeof(buf));
 	}
 	if (error == 0) {
