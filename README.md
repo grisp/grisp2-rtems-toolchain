@@ -104,6 +104,32 @@ eMMC will be started regardless of the SD content.
 
 ## Writing an Image to eMMC
 
+:warning: :warning: :warning: :warning: :warning: :warning: :warning: :warning:
+:warning: :warning: :warning: :warning: :warning: :warning: :warning: :warning:
+
+Make absolutely sure the image that you write has a bootloader. Otherwise your
+GRiSP2 might can't boot any more and you have to use the [recovery sequence][7].
+
+:warning: :warning: :warning: :warning: :warning: :warning: :warning: :warning:
+:warning: :warning: :warning: :warning: :warning: :warning: :warning: :warning:
+
+### Using an SD Card
+
+1. Copy the image that you want onto an SD card. Put it in your GRiSP2.
+1. Power up the GRiSP2.
+1. Interrupt the boot loader when it outputs the `Hit m for menu or any key to
+   stop autoboot:` line. You should drop into a shell with a
+   `barebox@PHYTEC phyCORE-i.MX6 ULL SOM with eMMC:/` prompt.
+1. Type `mmc1.probe=1` to start the eMMC detection.
+1. Type `mmc0.probe=1` to start the SD detection.
+1. You can now do a ls on your SD card: `ls /mnt/mmc0.0`
+1. Copy your image to the eMMC with `cp /mnt/mmc0.0/grisp2.img /dev/mmc1`.
+   For big images, that needs quite some time.
+1. Reset the system with `reset` on the shell. Barebox should now boot your
+   application.
+
+### Using TFTP
+
 One way to write an Image to eMMC is via the bootloader:
 
 1. Make sure you have a DHCP server and a TFTP (announced via DHCP). You can for
@@ -188,15 +214,24 @@ solution:
   `picocom ...` part with your preferred serial terminal application.
 
 ```
-./rtems/5/bin/imx_uart -nN /dev/ttyGRiSP ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec-phycore-imx6ull-grisp2.img && picocom -l -b 115200 /dev/ttyGRiSP
+./rtems/5/bin/imx_uart -nN /dev/ttyGRiSP ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img && picocom -l -b 115200 /dev/ttyGRiSP
 ```
 
 * Power-Cycle or Power up the GRiSP2. A reset is not enough!
 * Press the reset button and execute the prepared command in the next seconds.
-* Wait till `imx_uart` finishes and a `barebox` starts.
+* Wait till `imx_uart` finishes and a `barebox` starts. That will need quite a
+  bit of time (nearly a minute).
 * Interrupt the `barebox` start when it tells you to
   `Hit m for menu or any to stop autoboot:    1`
-* Continue with the steps from the section [Writing an Image to eMMC][5].
+* Use the eMMC image from `barebox/barebox_with_fs.zip` (unzip it) and
+  follow the steps from the section [Writing an Image to eMMC][5]. The image
+  contains a barebox and an empty partition.
+* Power down the GRiSP2 and remove the `BOOT_MODE` Jumpers.
+* Power up the GRiSP2. You should now get a Bootloader again. Interrupt the boot
+  when it tells you to `Hit m for menu or any to stop autoboot:`
+* Now you can copy new files onto the empty partition (mounted at `/mnt/emmc`).
+  If you want to copy from an SD Card you have to do a `mmc0.probe=1` first.
+  Then you can access the SD Card in `/mnt/mmc0.0`.
 
 ## eMMC Image
 
@@ -232,3 +267,4 @@ sudo losetup -d /dev/loop4
 [4]: http://infocenter.arm.com/help/topic/com.arm.doc.faqs/attached/13634/cortex_debug_connectors.pdf
 [5]: #writing-an-image-to-emmc
 [6]: #emmc-image
+[7]: #boot-loader-recovery
