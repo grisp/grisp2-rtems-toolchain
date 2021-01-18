@@ -49,6 +49,7 @@
 #include <grisp/led.h>
 #include <grisp/init.h>
 
+#include "fragmented-read-test.h"
 #include "sd-card-test.h"
 #include "i2c.h"
 #include "spi.h"
@@ -332,7 +333,8 @@ Init(rtems_task_argument arg)
   &shell_I2CDETECT_Command, \
   &shell_I2CGET_Command, \
   &shell_I2CSET_Command, \
-  &shell_1wiretemp_command
+  &shell_1wiretemp_command, \
+  &shell_FRAGMENTED_READ_TEST_Command
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 
