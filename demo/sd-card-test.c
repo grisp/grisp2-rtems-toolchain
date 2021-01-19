@@ -285,7 +285,7 @@ command_pattern_check(int argc, char *argv[])
 }
 
 #ifdef __rtems__
-rtems_shell_cmd_t rtems_shell_PATTERN_FILL_Command = {
+rtems_shell_cmd_t shell_PATTERN_FILL_Command = {
 	.name = "pattern-fill",
 	.usage = "CAUTION: This command is destructive.\n"
 	    "Use with: pattern-fill <file> <size> <block_size> [<start_value>]",
@@ -298,7 +298,7 @@ rtems_shell_cmd_t rtems_shell_PATTERN_FILL_Command = {
 	.gid = 0,
 };
 
-rtems_shell_cmd_t rtems_shell_PATTERN_CHECK_Command = {
+rtems_shell_cmd_t shell_PATTERN_CHECK_Command = {
 	.name = "pattern-check",
 	.usage = "Use with: pattern-check <file> <size> <block_size> [<start_value> [<output>]]",
 	.topic = "SDtest",

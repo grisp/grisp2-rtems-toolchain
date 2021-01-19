@@ -326,8 +326,8 @@ Init(rtems_task_argument arg)
   &rtems_shell_BLKSTATS_Command, \
   &rtems_shell_WPA_SUPPLICANT_Command, \
   &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
-  &rtems_shell_PATTERN_FILL_Command, \
-  &rtems_shell_PATTERN_CHECK_Command, \
+  &shell_PATTERN_FILL_Command, \
+  &shell_PATTERN_CHECK_Command, \
   &shell_SPI_Command, \
   &shell_I2CDETECT_Command, \
   &shell_I2CGET_Command, \
