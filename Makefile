@@ -48,7 +48,7 @@ else
 endif
 
 # Note: You have to rebuild BSP and all libs if you change that.
-DEBUG = 1
+DEBUG = 0
 ifeq ($(DEBUG),1)
 OPTIMIZATION = 0
 EXTRA_BSP_OPTS = --enable-rtems-debug
