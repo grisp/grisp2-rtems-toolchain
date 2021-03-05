@@ -57,6 +57,7 @@ Building the toolchain on Ubuntu requires the following packages:
 * `device-tree-compiler`
 * `u-boot-tools`
 * `lzop`
+* `python`
 
 Building OpenOCD additionally requires
 
@@ -65,7 +66,7 @@ Building OpenOCD additionally requires
 **Install with apt-get**
 
 ```
-sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools lzop libusb-1.0-0-dev
+sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools lzop libusb-1.0-0-dev python-dev
 ```
 
 ### Building
