@@ -40,7 +40,7 @@
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb1_en>;
-		gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio2 8 GPIO_ACTIVE_HIGH>;
 
 		regulator-name = "usb1";
 		regulator-min-microvolt = <5000000>;
@@ -175,7 +175,7 @@
 
 	pinctrl_usb1_en: usb1engrp {
 		fsl,pins = <
-			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x08
+			MX6UL_PAD_ENET2_RX_DATA0__GPIO2_IO08	0x08
 		>;
 	};
 
