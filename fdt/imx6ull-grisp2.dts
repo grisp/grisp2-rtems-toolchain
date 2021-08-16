@@ -3,8 +3,6 @@
  * Copyright (C) 2020 embedded brains GmbH.
  */
 
-#undef GRISP_IMX6ULL_Y0
-
 /dts-v1/;
 #include "imx6ull.dtsi"
 #include "imx6ull-phytec-phycore-som.dtsi"
@@ -12,17 +10,6 @@
 / {
 	model = "GRiSP2";
 	compatible = "embeddedbrains,grisp2", "phytec,imx6ul-pcl063-emmc", "fsl,imx6ull";
-
-	aliases {
-#ifdef GRISP_IMX6ULL_Y0
-		/delete-property/ serial4;
-		/delete-property/ serial5;
-		/delete-property/ serial6;
-		/delete-property/ serial7;
-		/delete-property/ usbphy1;
-		/delete-property/ ethernet1;
-#endif /* GRISP_IMX6ULL_Y0 */
-	};
 
 	gpio_leds_grisp2: leds {
 		pinctrl-names = "default";
@@ -76,16 +63,6 @@
 		status = "okay";
 	};
 };
-
-#ifdef GRISP_IMX6ULL_Y0
-/delete-node/ &uart5;
-/delete-node/ &uart6;
-/delete-node/ &uart7;
-/delete-node/ &uart8;
-/delete-node/ &usbphy2;
-/delete-node/ &usbotg2;
-/delete-node/ &fec2;
-#endif /* GRISP_IMX6ULL_Y0 */
 
 &fec1 {
 	status = "okay";
@@ -144,14 +121,9 @@
 };
 
 &usbphy1 {
-#ifndef GRISP_IMX6ULL_Y0
 	vbus-supply = <&reg_usb1>;
-#else
-	vbus-supply = <&reg_usb2>;
-#endif
 };
 
-#ifndef GRISP_IMX6ULL_Y0
 &usbotg2 {
 	dr_mode = "host";
 	disable-over-current;
@@ -161,8 +133,6 @@
 &usbphy2 {
 	vbus-supply = <&reg_usb2>;
 };
-
-#endif /* GRISP_IMX6ULL_Y0 */
 
 &usdhc1 {
 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
@@ -178,13 +148,6 @@
 
 &usdhc2 {
 	pinctrl-names = "default";
-#ifdef GRISP_IMX6ULL_Y0
-	pinctrl-0 = <&pinctrl_usdhc2_grisp>;
-	bus-width = <8>;
-	max-frequency = <50000000>;
-	no-1-8-v;
-	cap-mmc-hw-reset;
-#endif
 	non-removable;
 	wakeup-source;
 	status = "okay";
@@ -257,26 +220,6 @@
 			MX6UL_PAD_UART1_RTS_B__GPIO1_IO19	0x17059
 		>;
 	};
-
-#ifdef GRISP_IMX6ULL_Y0
-	/delete-node/ pinctrl_usdhc2;
-
-	pinctrl_usdhc2_grisp: usdhc2-grp {
-		fsl,pins = <
-			MX6UL_PAD_LCD_DATA13__USDHC2_RESET_B	0x17059
-			MX6UL_PAD_LCD_DATA18__USDHC2_CMD	0x17059
-			MX6UL_PAD_LCD_DATA19__USDHC2_CLK	0x17059
-			MX6UL_PAD_LCD_DATA20__USDHC2_DATA0	0x17059
-			MX6UL_PAD_LCD_DATA21__USDHC2_DATA1	0x17059
-			MX6UL_PAD_LCD_DATA22__USDHC2_DATA2	0x17059
-			MX6UL_PAD_LCD_DATA23__USDHC2_DATA3	0x17059
-			MX6UL_PAD_LCD_DATA14__USDHC2_DATA4	0x17059
-			MX6UL_PAD_LCD_DATA15__USDHC2_DATA5	0x17059
-			MX6UL_PAD_LCD_DATA16__USDHC2_DATA6	0x17059
-			MX6UL_PAD_LCD_DATA17__USDHC2_DATA7	0x17059
-		>;
-	};
-#endif
 
 	pinctrl_spi0: spi0grp {
 		fsl,pins = <
