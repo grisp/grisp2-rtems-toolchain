@@ -53,6 +53,7 @@
 #include "i2c.h"
 #include "spi.h"
 #include "1wire.h"
+#include "pmod_rfid.h"
 
 #define STACK_SIZE_INIT_TASK	(64 * 1024)
 #define STACK_SIZE_SHELL	(64 * 1024)
@@ -251,6 +252,7 @@ Init(rtems_task_argument arg)
 	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA, create_wlandev);
 
 	init_led();
+	pmod_rfid_init(SPI_BUS, 1);
 	start_shell();
 
 	exit(0);
