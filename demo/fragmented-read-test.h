@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (C) 2020 embedded brains GmbH.
+ * Copyright (C) 2021 embedded brains GmbH.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,8 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DEMO_SD_CARD_TEST_H
-#define DEMO_SD_CARD_TEST_H
+#ifndef DEMO_FRAGMENTED_READ_TEST_H
+#define DEMO_FRAGMENTED_READ_TEST_H
 
 #include <rtems.h>
 #include <rtems/shell.h>
@@ -35,11 +35,10 @@
 extern "C" {
 #endif /* __cplusplus */
 
-extern rtems_shell_cmd_t shell_PATTERN_FILL_Command;
-extern rtems_shell_cmd_t shell_PATTERN_CHECK_Command;
+extern rtems_shell_cmd_t shell_FRAGMENTED_READ_TEST_Command;
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* DEMO_SD_CARD_TEST_H */
+#endif /* DEMO_FRAGMENTED_READ_TEST_H */

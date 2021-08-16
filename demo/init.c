@@ -29,6 +29,8 @@
  * SUCH DAMAGE.
  */
 
+#undef EVENT_RECORDING
+
 #include <assert.h>
 #include <stdlib.h>
 
@@ -43,12 +45,17 @@
 #include <rtems/stringto.h>
 #include <rtems/ftpd.h>
 #include <machine/rtems-bsd-commands.h>
+#ifdef EVENT_RECORDING
+#include <rtems/record.h>
+#include <rtems/recordserver.h>
+#endif /* EVENT_RECORDING */
 
 #include <bsp.h>
 
 #include <grisp/led.h>
 #include <grisp/init.h>
 
+#include "fragmented-read-test.h"
 #include "sd-card-test.h"
 #include "i2c.h"
 #include "spi.h"
@@ -251,6 +258,11 @@ Init(rtems_task_argument arg)
 	sleep(3);
 	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA, create_wlandev);
 
+#ifdef EVENT_RECORDING
+	rtems_record_start_server(10, 1234, 10);
+	rtems_record_line();
+#endif /* EVENT_RECORDING */
+
 	init_led();
 	pmod_rfid_init(SPI_BUS, 1);
 	start_shell();
@@ -296,6 +308,11 @@ Init(rtems_task_argument arg)
 #define CONFIGURE_SWAPOUT_TASK_PRIORITY 97
 
 //#define CONFIGURE_STACK_CHECKER_ENABLED
+#ifdef EVENT_RECORDING
+#define CONFIGURE_RECORD_EXTENSIONS_ENABLED
+#define CONFIGURE_RECORD_PER_PROCESSOR_ITEMS (128 * 1024)
+#define CONFIGURE_RECORD_FATAL_DUMP_BASE64
+#endif /* EVENT_RECORDING */
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_INIT
@@ -326,13 +343,14 @@ Init(rtems_task_argument arg)
   &rtems_shell_BLKSTATS_Command, \
   &rtems_shell_WPA_SUPPLICANT_Command, \
   &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
-  &rtems_shell_PATTERN_FILL_Command, \
-  &rtems_shell_PATTERN_CHECK_Command, \
+  &shell_PATTERN_FILL_Command, \
+  &shell_PATTERN_CHECK_Command, \
   &shell_SPI_Command, \
   &shell_I2CDETECT_Command, \
   &shell_I2CGET_Command, \
   &shell_I2CSET_Command, \
-  &shell_1wiretemp_command
+  &shell_1wiretemp_command, \
+  &shell_FRAGMENTED_READ_TEST_Command
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 
