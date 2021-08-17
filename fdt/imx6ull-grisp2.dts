@@ -90,9 +90,9 @@
 		reg = <0x5f>;
 		status = "okay";
 	};
-	atecc508a: cryptoauth@60 {
-		compatible = "microchip,atecc508a", "atmel,at24c16";
-		reg = <0x60>;
+	atecc608a: cryptoauth@60 {
+		compatible = "microchip,atecc608a", "atmel,at24c16";
+		reg = <0x36>;
 		status = "okay";
 	};
 };
