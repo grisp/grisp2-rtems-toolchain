@@ -4,8 +4,8 @@
  */
 
 /dts-v1/;
-#include "imx6ull.dtsi"
-#include "imx6ull-phytec-phycore-som.dtsi"
+#include "imx6ul.dtsi"
+#include "imx6ul-phytec-phycore-som.dtsi"
 
 / {
 	model = "GRiSP2";
@@ -237,9 +237,7 @@
 			MX6UL_PAD_CSI_VSYNC__GPIO4_IO19		0x8
 		>;
 	};
-};
 
-&iomuxc_snvs {
 	pinctrl_gpioleds_grisp2: gpioledsgrisp2grp {
 		fsl,pins = <
 			MX6UL_PAD_SNVS_TAMPER0__GPIO5_IO00	0x00088
