@@ -53,6 +53,16 @@ jobs:
           if [ "$RUNNER_OS" == "Linux" ]; then
             make barebox
           fi
+      - name: Get errorinfo
+        shell: bash
+        if: ${{ failure() }}
+        run: |
+          find . -name "rsb-report-*" \
+            -exec echo "________________________________________________________________________________________________________" \; \
+            -exec echo '{}' \; \
+            -exec echo "________________________________________________________________________________________________________" \; \
+            -exec tail -500 '{}' \; \
+            -exec echo \;
       - name: Build demo application
         shell: bash
         run: |
