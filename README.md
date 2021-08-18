@@ -1,8 +1,5 @@
 # GRiSP2 RTEMS Toolchain
 
-:warning: This repository is still work in progress. Some stuff might is still
-broken and some stuff won't work like expected. Use at your own risk. :warning:
-
 This repository contains the basic tools and libraries to get an RTEMS system
 running on GRiSP2. This includes:
 
