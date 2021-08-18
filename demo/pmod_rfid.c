@@ -25,8 +25,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <bsp.h>
+#ifdef LIBBSP_ARM_ATSAM_BSP_H
+#define IS_GRISP1 1
+#else
+#define IS_GRISP2 1
+#endif
+
 #include <rtems.h>
 #include <rtems/shell.h>
+
+#ifdef IS_GRISP2
 #include <bsp/fdt.h>
 #include <bsp/imx-gpio.h>
 
@@ -660,3 +669,4 @@ pmod_rfid_init(const char *spi_bus, uint8_t cs) {
 	cmd = rtems_shell_add_cmd_struct(&pmod_rfid_cmd_led);
 	assert(cmd == &pmod_rfid_cmd_led);
 }
+#endif /* IS_GRISP2 */

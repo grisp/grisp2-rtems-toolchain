@@ -51,7 +51,15 @@
 #endif /* EVENT_RECORDING */
 
 #include <bsp.h>
+#ifdef LIBBSP_ARM_ATSAM_BSP_H
+#define IS_GRISP1 1
+#else
+#define IS_GRISP2 1
+#endif
 
+#ifdef IS_GRISP1
+#include <grisp/pin-config.h>
+#endif /* IS_GRISP1 */
 #include <grisp/led.h>
 #include <grisp/init.h>
 
@@ -76,6 +84,12 @@
 #define CMD_SPI_MAX_LEN 32
 
 const char *wpa_supplicant_conf = "/media/mmcsd-0-0/wpa_supplicant.conf";
+
+#ifdef IS_GRISP1
+const Pin atsam_pin_config[] = {GRISP_PIN_CONFIG};
+const size_t atsam_pin_config_count = PIO_LISTSIZE(atsam_pin_config);
+const uint32_t atsam_matrix_ccfg_sysio = GRISP_MATRIX_CCFG_SYSIO;
+#endif /* IS_GRISP1 */
 
 struct rtems_ftpd_configuration rtems_ftpd_configuration = {
 	.priority = 100,
@@ -229,6 +243,7 @@ Init(rtems_task_argument arg)
 
 	puts("\nGRiSP2 RTEMS Demo\n");
 
+#ifdef IS_GRISP2
 	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
 	assert(rv == 0);
 
@@ -237,6 +252,7 @@ Init(rtems_task_argument arg)
 
 	rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
 	assert(rv == 0);
+#endif /* IS_GRISP2 */
 
 	grisp_init_sd_card();
 	grisp_init_lower_self_prio();
@@ -264,7 +280,9 @@ Init(rtems_task_argument arg)
 #endif /* EVENT_RECORDING */
 
 	init_led();
+#ifdef IS_GRISP2
 	pmod_rfid_init(SPI_BUS, 1);
+#endif /* IS_GRISP2 */
 	start_shell();
 
 	exit(0);

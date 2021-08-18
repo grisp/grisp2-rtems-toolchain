@@ -6,6 +6,7 @@ MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ARCH = arm
 BSP = imx7
+BSP_GRISP1 = atsamv
 RTEMS_VERSION = 5
 TARGET = $(ARCH)-rtems$(RTEMS_VERSION)
 PREFIX = $(MAKEFILE_DIR)/rtems/$(RTEMS_VERSION)
@@ -18,6 +19,7 @@ SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
+BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
 BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
@@ -69,7 +71,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bootstrap bsp libbsd fdt bsp.mk libgrisp libinih
+install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -127,13 +129,42 @@ bsp:
 	cd $(BUILD_BSP) && make -j $(NUMCORE)
 	cd $(BUILD_BSP) && make -j $(NUMCORE) install
 
+.PHONY: bsp-grisp1
+#H Build the RTEMS board support package for GRiSP1.
+bsp-grisp1:
+	rm -rf $(BUILD_BSP_GRISP1)
+	mkdir -p $(BUILD_BSP_GRISP1)
+	cd $(BUILD_BSP_GRISP1) && $(SRC_RTEMS)/configure \
+	    --target=$(ARCH)-rtems$(RTEMS_VERSION) \
+	    --prefix=$(PREFIX) \
+	    --enable-posix \
+	    --enable-rtemsbsp=$(BSP_GRISP1) \
+	    --enable-maintainer-mode \
+	    --disable-networking \
+	    --disable-tests \
+	    $(EXTRA_BSP_OPTS) \
+	    --enable-chip=same70q21 \
+	    --enable-sdram=is42s16320f-7bl \
+	    ATSAM_CONSOLE_DEVICE_TYPE=1 \
+	    ATSAM_CONSOLE_DEVICE_INDEX=2 \
+	    ATSAM_MEMORY_QSPIFLASH_SIZE=0x0 \
+	    ATSAM_MEMORY_NOCACHE_SIZE=0x8000
+	cd $(BUILD_BSP_GRISP1) && make -j $(NUMCORE)
+	cd $(BUILD_BSP_GRISP1) && make -j $(NUMCORE) install
+
 .PHONY: bsp.mk
 #H Build a Makefile helper for the applications.
-bsp.mk: $(PREFIX)/make/custom/$(BSP).mk
+bsp.mk: $(PREFIX)/make/custom/$(BSP).mk $(PREFIX)/make/custom/$(BSP_GRISP1).mk
 $(PREFIX)/make/custom/$(BSP).mk: src/bsp.mk
 	cat $^ | sed \
 	    -e "s/##RTEMS_API##/$(RTEMS_VERSION)/g" \
 	    -e "s/##RTEMS_BSP##/$(BSP)/g" \
+	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
+	    > $@
+$(PREFIX)/make/custom/$(BSP_GRISP1).mk: src/bsp.mk
+	cat $^ | sed \
+	    -e "s/##RTEMS_API##/$(RTEMS_VERSION)/g" \
+	    -e "s/##RTEMS_BSP##/$(BSP_GRISP1)/g" \
 	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
 	    > $@
 
@@ -143,23 +174,37 @@ libbsd:
 	rm -rf $(SRC_LIBBSD)/build
 	cd $(SRC_LIBBSD) && ./waf configure \
 	    --prefix=$(PREFIX) \
-	    --rtems-bsps=$(ARCH)/$(BSP) \
+	    --rtems-bsps=$(ARCH)/$(BSP),$(ARCH)/$(BSP_GRISP1) \
 	    --enable-warnings \
 	    --optimization=$(OPTIMIZATION) \
 	    --buildset=$(LIBBSD_BUILDSET) \
 	    --rtems-version=$(RTEMS_VERSION)
+	# Workaround for GRiSP1
+	[ ! -e "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.org" ] && \
+		mv "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds" \
+		    "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.org" || \
+		true
+	cp "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.sdram" \
+	    "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds"
+	# End of workaround for GRiSP1
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
+	# Workaround for GRiSP1
+	cp "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.org" \
+	    "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds"
+	# End of workaround for GRiSP1
 
 .PHONY: libgrisp
 #H Build and install libgrisp.
 libgrisp:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBGRISP) install
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP1) -C $(SRC_LIBGRISP) install
 
 .PHONY: libinih
 #H Build and install libinih
 libinih:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBINIH) clean install
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP1) -C $(SRC_LIBINIH) clean install
 
 .PHONY: fdt
 #H Build the flattened device tree.
@@ -234,11 +279,13 @@ imx_uart:
 #H Build the demo application.
 demo:
 	make -C demo
+	RTEMS_BSP=$(BSP_GRISP1) make -C demo
 
 .PHONY: demo-clean
 #H Clean the demo application.
 demo-clean:
 	make -C demo clean
+	RTEMS_BSP=$(BSP_GRISP1) make -C demo clean
 
 .PHONY: shell
 #H Start a shell with the environment for building for example the RTEMS BSP.
