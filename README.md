@@ -215,7 +215,7 @@ solution:
   `picocom ...` part with your preferred serial terminal application.
 
 ```
-./rtems/5/bin/imx_uart -nN /dev/ttyGRiSP ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img && picocom -l -b 115200 /dev/ttyGRiSP
+./rtems/5/bin/imx_uart -nN /dev/ttyGRiSP ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec.bin && picocom -l -b 115200 /dev/ttyGRiSP
 ```
 
 * Power-Cycle or Power up the GRiSP2. A reset is not enough!
@@ -224,7 +224,7 @@ solution:
   bit of time (nearly a minute).
 * Interrupt the `barebox` start when it tells you to
   `Hit m for menu or any to stop autoboot:    1`
-* Use the eMMC image from `barebox/barebox_with_fs.zip` (unzip it) and
+* Use the eMMC image from `barebox/barebox_emmc.zip` (unzip it) and
   follow the steps from the section [Writing an Image to eMMC][5]. The image
   contains a barebox and an empty partition.
 * Power down the GRiSP2 and remove the `BOOT_MODE` Jumpers.
