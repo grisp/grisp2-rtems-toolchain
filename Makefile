@@ -220,7 +220,7 @@ endif
 	cd $(SRC_BAREBOX) && rm -f .config
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
 	cd $(SRC_BAREBOX) && make ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- -j$(NUMCORE)
-	cp $(SRC_BAREBOX)/images/barebox-phytec-phycore-imx6ull-emmc-512mb.img barebox
+	cp $(SRC_BAREBOX)/images/barebox-phytec-phycore-imx6ul-emmc-512mb.img barebox
 
 .PHONY: openocd
 #H Build OpenOCD for debugging
