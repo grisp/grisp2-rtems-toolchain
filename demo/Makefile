@@ -5,6 +5,9 @@ RTEMS_BSP ?= imx7
 include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).mk
 
 CFLAGS += -O0
+ifeq ($(RTEMS_BSP),atsamv)
+LDFLAGS += -qnolinkcmds -T linkcmds.sdram
+endif
 
 APP = $(BUILDDIR)/demo
 APP_PIECES = $(wildcard *.c)

@@ -29,6 +29,8 @@
  * SUCH DAMAGE.
  */
 
+#undef EVENT_RECORDING
+
 #include <assert.h>
 #include <stdlib.h>
 
@@ -43,16 +45,30 @@
 #include <rtems/stringto.h>
 #include <rtems/ftpd.h>
 #include <machine/rtems-bsd-commands.h>
+#ifdef EVENT_RECORDING
+#include <rtems/record.h>
+#include <rtems/recordserver.h>
+#endif /* EVENT_RECORDING */
 
 #include <bsp.h>
+#ifdef LIBBSP_ARM_ATSAM_BSP_H
+#define IS_GRISP1 1
+#else
+#define IS_GRISP2 1
+#endif
 
+#ifdef IS_GRISP1
+#include <grisp/pin-config.h>
+#endif /* IS_GRISP1 */
 #include <grisp/led.h>
 #include <grisp/init.h>
 
+#include "fragmented-read-test.h"
 #include "sd-card-test.h"
 #include "i2c.h"
 #include "spi.h"
 #include "1wire.h"
+#include "pmod_rfid.h"
 
 #define STACK_SIZE_INIT_TASK	(64 * 1024)
 #define STACK_SIZE_SHELL	(64 * 1024)
@@ -68,6 +84,12 @@
 #define CMD_SPI_MAX_LEN 32
 
 const char *wpa_supplicant_conf = "/media/mmcsd-0-0/wpa_supplicant.conf";
+
+#ifdef IS_GRISP1
+const Pin atsam_pin_config[] = {GRISP_PIN_CONFIG};
+const size_t atsam_pin_config_count = PIO_LISTSIZE(atsam_pin_config);
+const uint32_t atsam_matrix_ccfg_sysio = GRISP_MATRIX_CCFG_SYSIO;
+#endif /* IS_GRISP1 */
 
 struct rtems_ftpd_configuration rtems_ftpd_configuration = {
 	.priority = 100,
@@ -221,6 +243,7 @@ Init(rtems_task_argument arg)
 
 	puts("\nGRiSP2 RTEMS Demo\n");
 
+#ifdef IS_GRISP2
 	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
 	assert(rv == 0);
 
@@ -229,6 +252,7 @@ Init(rtems_task_argument arg)
 
 	rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
 	assert(rv == 0);
+#endif /* IS_GRISP2 */
 
 	grisp_init_sd_card();
 	grisp_init_lower_self_prio();
@@ -250,7 +274,15 @@ Init(rtems_task_argument arg)
 	sleep(3);
 	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA, create_wlandev);
 
+#ifdef EVENT_RECORDING
+	rtems_record_start_server(10, 1234, 10);
+	rtems_record_line();
+#endif /* EVENT_RECORDING */
+
 	init_led();
+#ifdef IS_GRISP2
+	pmod_rfid_init(SPI_BUS, 1);
+#endif /* IS_GRISP2 */
 	start_shell();
 
 	exit(0);
@@ -294,6 +326,11 @@ Init(rtems_task_argument arg)
 #define CONFIGURE_SWAPOUT_TASK_PRIORITY 97
 
 //#define CONFIGURE_STACK_CHECKER_ENABLED
+#ifdef EVENT_RECORDING
+#define CONFIGURE_RECORD_EXTENSIONS_ENABLED
+#define CONFIGURE_RECORD_PER_PROCESSOR_ITEMS (128 * 1024)
+#define CONFIGURE_RECORD_FATAL_DUMP_BASE64
+#endif /* EVENT_RECORDING */
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_INIT
@@ -324,13 +361,14 @@ Init(rtems_task_argument arg)
   &rtems_shell_BLKSTATS_Command, \
   &rtems_shell_WPA_SUPPLICANT_Command, \
   &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
-  &rtems_shell_PATTERN_FILL_Command, \
-  &rtems_shell_PATTERN_CHECK_Command, \
+  &shell_PATTERN_FILL_Command, \
+  &shell_PATTERN_CHECK_Command, \
   &shell_SPI_Command, \
   &shell_I2CDETECT_Command, \
   &shell_I2CGET_Command, \
   &shell_I2CSET_Command, \
-  &shell_1wiretemp_command
+  &shell_1wiretemp_command, \
+  &shell_FRAGMENTED_READ_TEST_Command
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 

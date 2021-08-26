@@ -35,7 +35,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-rtems_shell_cmd_t shell_1wiretemp_command;
+extern rtems_shell_cmd_t shell_1wiretemp_command;
 
 #ifdef __cplusplus
 }

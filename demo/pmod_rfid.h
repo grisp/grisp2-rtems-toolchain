@@ -1,7 +1,7 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
 /*
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (C) 2020 embedded brains GmbH.
+ * Copyright (C) 2020 embedded brains GmbH (http://www.embedded-brains.de)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,22 +25,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DEMO_I2C_H
-#define DEMO_I2C_H
+#ifndef DEMO_PMOD_RFID_H
+#define DEMO_PMOD_RFID_H
 
 #include <rtems.h>
-#include <rtems/shell.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-extern rtems_shell_cmd_t shell_I2CDETECT_Command;
-extern rtems_shell_cmd_t shell_I2CGET_Command;
-extern rtems_shell_cmd_t shell_I2CSET_Command;
+/* Initialize necessary stuff and add shell commands to work with PMOD_RFID */
+void pmod_rfid_init(const char *spi_bus, uint8_t cs);
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* DEMO_I2C_H */
+#endif /* DEMO_PMOD_RFID_H */

@@ -3,26 +3,13 @@
  * Copyright (C) 2020 embedded brains GmbH.
  */
 
-#define GRISP_IMX6ULL_Y0
-
 /dts-v1/;
-#include "imx6ull.dtsi"
-#include "imx6ull-phytec-phycore-som.dtsi"
+#include "imx6ul.dtsi"
+#include "imx6ul-phytec-phycore-som.dtsi"
 
 / {
 	model = "GRiSP2";
-	compatible = "embeddedbrains,grisp2", "phytec,imx6ul-pbacd-10", "phytec,imx6ul-pcl063", "fsl,imx6ul";
-
-	aliases {
-#ifdef GRISP_IMX6ULL_Y0
-		/delete-property/ serial4;
-		/delete-property/ serial5;
-		/delete-property/ serial6;
-		/delete-property/ serial7;
-		/delete-property/ usbphy1;
-		/delete-property/ ethernet1;
-#endif /* GRISP_IMX6ULL_Y0 */
-	};
+	compatible = "embeddedbrains,grisp2", "phytec,imx6ul-pcl063-emmc", "fsl,imx6ull";
 
 	gpio_leds_grisp2: leds {
 		pinctrl-names = "default";
@@ -53,11 +40,12 @@
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb1_en>;
-		gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio2 8 GPIO_ACTIVE_HIGH>;
 
 		regulator-name = "usb1";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
+		enable-active-high;
 
 		status = "okay";
 	};
@@ -66,7 +54,7 @@
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb2_en>;
-		gpio = <&gpio3 16 GPIO_ACTIVE_LOW>;
+		gpio = <&gpio3 16 GPIO_ACTIVE_HIGH>;
 
 		regulator-name = "usb2";
 		regulator-min-microvolt = <5000000>;
@@ -75,16 +63,6 @@
 		status = "okay";
 	};
 };
-
-#ifdef GRISP_IMX6ULL_Y0
-/delete-node/ &uart5;
-/delete-node/ &uart6;
-/delete-node/ &uart7;
-/delete-node/ &uart8;
-/delete-node/ &usbphy2;
-/delete-node/ &usbotg2;
-/delete-node/ &fec2;
-#endif /* GRISP_IMX6ULL_Y0 */
 
 &fec1 {
 	status = "okay";
@@ -112,9 +90,9 @@
 		reg = <0x5f>;
 		status = "okay";
 	};
-	atecc508a: cryptoauth@60 {
-		compatible = "microchip,atecc508a", "atmel,at24c16";
-		reg = <0x60>;
+	atecc608a: cryptoauth@60 {
+		compatible = "microchip,atecc608a", "atmel,at24c16";
+		reg = <0x36>;
 		status = "okay";
 	};
 };
@@ -143,14 +121,9 @@
 };
 
 &usbphy1 {
-#ifndef GRISP_IMX6ULL_Y0
 	vbus-supply = <&reg_usb1>;
-#else
-	vbus-supply = <&reg_usb2>;
-#endif
 };
 
-#ifndef GRISP_IMX6ULL_Y0
 &usbotg2 {
 	dr_mode = "host";
 	disable-over-current;
@@ -160,8 +133,6 @@
 &usbphy2 {
 	vbus-supply = <&reg_usb2>;
 };
-
-#endif /* GRISP_IMX6ULL_Y0 */
 
 &usdhc1 {
 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
@@ -177,13 +148,6 @@
 
 &usdhc2 {
 	pinctrl-names = "default";
-#ifdef GRISP_IMX6ULL_Y0
-	pinctrl-0 = <&pinctrl_usdhc2_grisp>;
-	bus-width = <8>;
-	max-frequency = <50000000>;
-	no-1-8-v;
-	cap-mmc-hw-reset;
-#endif
 	non-removable;
 	wakeup-source;
 	status = "okay";
@@ -197,6 +161,8 @@
 		   <&gpio3 10 GPIO_ACTIVE_HIGH>,
 		   <&gpio3 11 GPIO_ACTIVE_HIGH>,
 		   <&gpio3 12 GPIO_ACTIVE_HIGH>;
+
+	grisp,int-gpios = <&gpio4 19 GPIO_ACTIVE_HIGH>;
 };
 
 &iomuxc {
@@ -209,7 +175,7 @@
 
 	pinctrl_usb1_en: usb1engrp {
 		fsl,pins = <
-			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x08
+			MX6UL_PAD_ENET2_RX_DATA0__GPIO2_IO08	0x08
 		>;
 	};
 
@@ -255,28 +221,6 @@
 		>;
 	};
 
-#ifdef GRISP_IMX6ULL_Y0
-	/delete-node/ pinctrl_usdhc2;
-
-	pinctrl_usdhc2_grisp: usdhc2-grp {
-		fsl,pins = <
-			MX6UL_PAD_LCD_DATA13__USDHC2_RESET_B	0x17059
-			MX6UL_PAD_LCD_DATA18__USDHC2_CMD	0x17059
-			MX6UL_PAD_LCD_DATA19__USDHC2_CLK	0x17059
-			MX6UL_PAD_LCD_DATA20__USDHC2_DATA0	0x17059
-			MX6UL_PAD_LCD_DATA21__USDHC2_DATA1	0x17059
-			MX6UL_PAD_LCD_DATA22__USDHC2_DATA2	0x17059
-			MX6UL_PAD_LCD_DATA23__USDHC2_DATA3	0x17059
-			MX6UL_PAD_LCD_DATA14__USDHC2_DATA4	0x17059
-			MX6UL_PAD_LCD_DATA15__USDHC2_DATA5	0x17059
-			MX6UL_PAD_LCD_DATA16__USDHC2_DATA6	0x17059
-			MX6UL_PAD_LCD_DATA17__USDHC2_DATA7	0x17059
-		>;
-	};
-#endif
-
-	/delete-node/ gpioledssomgrp;
-
 	pinctrl_spi0: spi0grp {
 		fsl,pins = <
 			MX6UL_PAD_CSI_DATA04__ECSPI1_SCLK	0x8
@@ -291,14 +235,6 @@
 			MX6UL_PAD_CSI_DATA03__GPIO4_IO24	0x8
 			/* SPI_INT */
 			MX6UL_PAD_CSI_VSYNC__GPIO4_IO19		0x8
-		>;
-	};
-};
-
-&iomuxc_snvs {
-	pinctrl_gpioleds_som: gpioledssomgrp {
-		fsl,pins = <
-			MX6ULL_PAD_SNVS_TAMPER4__GPIO5_IO04	0x0b0b0
 		>;
 	};
 
