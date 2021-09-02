@@ -27,3 +27,7 @@
 [submodule "external/imx_usb_loader"]
 	path = external/imx_usb_loader
 	url = https://github.com/boundarydevices/imx_usb_loader
+[submodule "external/cryptoauthlib"]
+	path = external/cryptoauthlib
+	url = https://github.com/MicrochipTech/cryptoauthlib.git
+	branch = v3.3.2

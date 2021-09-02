@@ -18,11 +18,17 @@ SRC_LIBINIH = $(MAKEFILE_DIR)/external/libinih
 SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
+SRC_CRYPTOAUTHLIB = $(MAKEFILE_DIR)/external/cryptoauthlib
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
 BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
+CMAKE_TOOLCHAIN_TEMPLATE = $(MAKEFILE_DIR)/cryptoauthlib/grisp2-toolchain.cmake.in
+CMAKE_TOOLCHAIN_CONFIG = $(PREFIX)/share/grisp2-toolchain.cmake
+CRYPTOAUTHLIB_OPENSSL_LIB="$(PREFIX)/$(TARGET)/$(BSP)/lib/libbsd.a"
+CRYPTOAUTHLIB_OPENSSL_INC="$(PREFIX)/$(TARGET)/$(BSP)/lib/include"
+
 
 GRISP_TOOLCHAIN_REVISION = $(shell git rev-parse HEAD)
 GRISP_TOOLCHAIN_PLATFORM = grisp2
@@ -274,6 +280,43 @@ imx_uart:
 	install -m644 $(SRC_IMX_USB_LOADER)/mx6ull_usb_work.conf '$(PREFIX)/etc/imx-loader.d/'
 	mkdir -p '$(PREFIX)/bin'
 	install -m755 $(SRC_IMX_USB_LOADER)/imx_uart '$(PREFIX)/bin/imx_uart'
+
+.PHONY: cmake_toolchain_config
+cmake_toolchain_config:
+	cat $(CMAKE_TOOLCHAIN_TEMPLATE) | sed \
+	    -e "s|##PREFIX##|$(PREFIX)|g" \
+	    -e "s|##BSP##|$(BSP)|g" \
+	    -e "s|##TARGET##|$(TARGET)|g" \
+	    > $(CMAKE_TOOLCHAIN_CONFIG)
+
+.PHONY: cryptoauthlib
+cryptoauthlib: cmake_toolchain_config
+	mkdir -p $(SRC_CRYPTOAUTHLIB)/build
+	cd $(SRC_CRYPTOAUTHLIB)/build && \
+		cmake \
+			-DATCA_HAL_KIT_HID=OFF \
+			-DATCA_HAL_KIT_BRIDGE=OFF \
+			-DATCA_HAL_I2C=ON \
+			-DATCA_HAL_SPI=OFF \
+			-DATCA_HAL_CUSTOM=OFF \
+			-DATCA_HAL_KIT_UART=OFF \
+			-DATCA_HAL_I2C=ON \
+			-DATCA_PKCS11=OFF \
+			-DATCA_OPENSSL=ON \
+			-DATCA_ATSHA204A_SUPPORT=OFF \
+			-DATCA_ATSHA206A_SUPPORT=OFF \
+			-DATCA_ATECC108A_SUPPORT=OFF \
+			-DATCA_ATECC508A_SUPPORT=OFF \
+			-DATCA_ATECC608_SUPPORT=ON \
+			-DATCA_TA100_SUPPORT=OFF \
+			-DATCA_ECC204_SUPPORT=OFF \
+			-DATCA_BUILD_SHARED_LIBS=OFF \
+			-DATCA_USE_ATCAB_FUNCTIONS=ON \
+			-DOPENSSL_CRYPTO_LIBRARY="$(CRYPTOAUTHLIB_OPENSSL_LIB)" \
+			-DOPENSSL_INCLUDE_DIR="$(CRYPTOAUTHLIB_OPENSSL_INC)" \
+			--toolchain $(CMAKE_TOOLCHAIN_CONFIG) ..
+	cd $(SRC_CRYPTOAUTHLIB)/build && \
+		make DESTDIR="$(PREFIX)" install
 
 .PHONY: demo
 #H Build the demo application.
