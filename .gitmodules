@@ -29,5 +29,5 @@
 	url = https://github.com/boundarydevices/imx_usb_loader
 [submodule "external/cryptoauthlib"]
 	path = external/cryptoauthlib
-	url = https://github.com/grisp/cryptoauthlib.git
-	branch = sylane/grisp_hal
+	url = https://github.com/MicrochipTech/cryptoauthlib.git
+	branch = v3.3.2
