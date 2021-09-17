@@ -77,7 +77,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih
+install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -296,13 +296,12 @@ cryptoauthlib: cmake_toolchain_config
 		cmake \
 			-DATCA_HAL_KIT_HID=OFF \
 			-DATCA_HAL_KIT_BRIDGE=OFF \
+			-DATCA_HAL_KIT_UART=OFF \
 			-DATCA_HAL_I2C=ON \
 			-DATCA_HAL_SPI=OFF \
 			-DATCA_HAL_CUSTOM=OFF \
-			-DATCA_HAL_KIT_UART=OFF \
-			-DATCA_HAL_I2C=ON \
 			-DATCA_PKCS11=OFF \
-			-DATCA_OPENSSL=ON \
+			-DATCA_OPENSSL=OFF \
 			-DATCA_ATSHA204A_SUPPORT=OFF \
 			-DATCA_ATSHA206A_SUPPORT=OFF \
 			-DATCA_ATECC108A_SUPPORT=OFF \
