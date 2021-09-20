@@ -200,7 +200,11 @@ the process. You can then start a gdb that connects to the server using
 command to the normal gdb that restarts the target and reloads the application.
 Note that for bigger applications, that might need quite some time.
 
-## Boot Loader Recovery
+## Boot Loader
+
+* [Instructions for updating the boot loader on GRiSP 2](doc/grisp2/bootloader-update.md)
+
+### Recovery
 
 For some reason the boot loader has been damaged on your system? Here is the
 solution:
