@@ -1,7 +1,7 @@
 # Note: $(PWD) doesn't work together with -C option of make
 MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
-BOARD = imx6ull-grisp2
+BOARD = imx6ul-grisp2
 SRC_FDT = $(MAKEFILE_DIR)/../external/fdt
 FDT_SYS = $(SRC_FDT)/sys
 FDT_SCRIPTS = $(FDT_SYS)/tools/fdt
@@ -14,6 +14,11 @@ export MACHINE = arm
 DTB = $(BUILDDIR)/$(BOARD).dtb
 
 all: $(DTB)
+
+install: all
+	mkdir -p $(PREFIX)/fdt
+	cp $(BOARD).dts $(PREFIX)/fdt/
+	cp $(DTB) $(PREFIX)/fdt/
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
