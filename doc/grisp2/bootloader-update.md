@@ -82,4 +82,4 @@ Use the following instructions to update the Barebox boot loader for GRiSP 2 to 
    ...:/
    ```
 
-6. Reset the board. It should now boot into the new boot loader. The environment might look different, execute `defaultenv` to restore the default environment for that particular barebox binary. Non-volatile variables (`nv`) are not affected.
+6. Reset the board. It should now boot into the new boot loader. The environment might look different, execute `defaultenv -r` to restore the default environment for that particular barebox binary. Non-volatile variables (`nv`) are not affected.
