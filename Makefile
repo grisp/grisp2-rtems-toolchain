@@ -209,7 +209,7 @@ libinih:
 .PHONY: fdt
 #H Build the flattened device tree.
 fdt:
-	make PREFIX=$(PREFIX) CPP=$(TARGET)-cpp -C fdt clean all
+	make PREFIX=$(PREFIX) CPP=$(TARGET)-cpp -C fdt clean install
 
 .PHONY: barebox
 #H Build the bootloader
