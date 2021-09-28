@@ -65,8 +65,6 @@
 
 #include "fragmented-read-test.h"
 #include "sd-card-test.h"
-#include "i2c.h"
-#include "spi.h"
 #include "1wire.h"
 #include "pmod_rfid.h"
 
@@ -363,10 +361,6 @@ Init(rtems_task_argument arg)
   &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
   &shell_PATTERN_FILL_Command, \
   &shell_PATTERN_CHECK_Command, \
-  &shell_SPI_Command, \
-  &shell_I2CDETECT_Command, \
-  &shell_I2CGET_Command, \
-  &shell_I2CSET_Command, \
   &shell_1wiretemp_command, \
   &shell_FRAGMENTED_READ_TEST_Command
 
