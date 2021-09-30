@@ -58,10 +58,12 @@
 #endif
 
 #ifdef IS_GRISP1
+#include <bsp/i2c.h>
 #include <grisp/pin-config.h>
 #endif /* IS_GRISP1 */
 #include <grisp/led.h>
 #include <grisp/init.h>
+#include <grisp/eeprom.h>
 
 #include "fragmented-read-test.h"
 #include "sd-card-test.h"
@@ -236,11 +238,16 @@ Init(rtems_task_argument arg)
 {
 	rtems_status_code sc;
 	int rv;
+	struct grisp_eeprom eeprom;
 
 	(void)arg;
 
 	puts("\nGRiSP2 RTEMS Demo\n");
 
+#ifdef IS_GRISP1
+	rv = atsam_register_i2c_0();
+	assert(rv == 0);
+#endif
 #ifdef IS_GRISP2
 	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
 	assert(rv == 0);
@@ -251,6 +258,14 @@ Init(rtems_task_argument arg)
 	rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
 	assert(rv == 0);
 #endif /* IS_GRISP2 */
+
+	printf("Init EEPROM\n");
+	grisp_eeprom_init();
+	if (grisp_eeprom_get(&eeprom) == 0) {
+		grisp_eeprom_dump(&eeprom);
+	} else {
+		printf("ERROR: Invalid EEPROM\n");
+	}
 
 	grisp_init_sd_card();
 	grisp_init_lower_self_prio();
