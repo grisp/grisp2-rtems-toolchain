@@ -238,7 +238,7 @@ Init(rtems_task_argument arg)
 {
 	rtems_status_code sc;
 	int rv;
-	struct grisp_eeprom eeprom;
+	struct grisp_eeprom eeprom = {0};
 
 	(void)arg;
 
@@ -261,11 +261,16 @@ Init(rtems_task_argument arg)
 
 	printf("Init EEPROM\n");
 	grisp_eeprom_init();
-	if (grisp_eeprom_get(&eeprom) == 0) {
+	rv = grisp_eeprom_get(&eeprom);
+#ifndef IS_GRISP1 /* On GRiSP1 the checksum hasn't been calculated correctly */
+	if (rv == 0) {
+#endif
 		grisp_eeprom_dump(&eeprom);
+#ifndef IS_GRISP1
 	} else {
 		printf("ERROR: Invalid EEPROM\n");
 	}
+#endif
 
 	grisp_init_sd_card();
 	grisp_init_lower_self_prio();
