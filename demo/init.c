@@ -58,15 +58,15 @@
 #endif
 
 #ifdef IS_GRISP1
+#include <bsp/i2c.h>
 #include <grisp/pin-config.h>
 #endif /* IS_GRISP1 */
 #include <grisp/led.h>
 #include <grisp/init.h>
+#include <grisp/eeprom.h>
 
 #include "fragmented-read-test.h"
 #include "sd-card-test.h"
-#include "i2c.h"
-#include "spi.h"
 #include "1wire.h"
 #include "pmod_rfid.h"
 
@@ -238,11 +238,16 @@ Init(rtems_task_argument arg)
 {
 	rtems_status_code sc;
 	int rv;
+	struct grisp_eeprom eeprom = {0};
 
 	(void)arg;
 
 	puts("\nGRiSP2 RTEMS Demo\n");
 
+#ifdef IS_GRISP1
+	rv = atsam_register_i2c_0();
+	assert(rv == 0);
+#endif
 #ifdef IS_GRISP2
 	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
 	assert(rv == 0);
@@ -253,6 +258,19 @@ Init(rtems_task_argument arg)
 	rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
 	assert(rv == 0);
 #endif /* IS_GRISP2 */
+
+	printf("Init EEPROM\n");
+	grisp_eeprom_init();
+	rv = grisp_eeprom_get(&eeprom);
+#ifndef IS_GRISP1 /* On GRiSP1 the checksum hasn't been calculated correctly */
+	if (rv == 0) {
+#endif
+		grisp_eeprom_dump(&eeprom);
+#ifndef IS_GRISP1
+	} else {
+		printf("ERROR: Invalid EEPROM\n");
+	}
+#endif
 
 	grisp_init_sd_card();
 	grisp_init_lower_self_prio();
@@ -363,10 +381,6 @@ Init(rtems_task_argument arg)
   &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
   &shell_PATTERN_FILL_Command, \
   &shell_PATTERN_CHECK_Command, \
-  &shell_SPI_Command, \
-  &shell_I2CDETECT_Command, \
-  &shell_I2CGET_Command, \
-  &shell_I2CSET_Command, \
   &shell_1wiretemp_command, \
   &shell_FRAGMENTED_READ_TEST_Command
 
