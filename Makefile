@@ -231,8 +231,8 @@ endif
 openocd:
 	# Note: Use a hack to _not_ use the RTEMS tools environment. The RTEMS
 	# aclocal version isn't compatible with OpenOCD
-	cd $(SRC_OPENOCD) && PATH=$(ORGPATH) ./bootstrap
-	cd $(SRC_OPENOCD) && PATH=$(ORGPATH) ./configure --prefix="$(PREFIX)" \
+	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" ./bootstrap
+	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" ./configure --prefix="$(PREFIX)" \
 	    --enable-ftdi \
 	    --disable-stlink \
 	    --disable-ti-icdi \
@@ -268,7 +268,7 @@ openocd:
 	    --disable-minidriver-dummy \
 	    --disable-remote-bitbang \
 	    --disable-werror
-	cd $(SRC_OPENOCD) && PATH=$(ORGPATH) make -j$(NUMCORE) install
+	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" make -j$(NUMCORE) install
 
 .PHONY: imx_uart
 #H Build the imx_uart tool for loading a bootloader
