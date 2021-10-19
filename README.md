@@ -258,7 +258,7 @@ sudo partprobe /dev/loop4
 sudo mkfs.vfat -n "GRISP2" /dev/loop4p1
 sudo mount /dev/loop4p1 some/mount/point
 sudo cp demo/b-imx7/demo.zImage some/mount/point/zImage
-sudo cp fdt/b-dtb/imx6ull-grisp2.dtb some/mount/point/oftree
+sudo cp fdt/b-dtb/imx6ul-grisp2.dtb some/mount/point/oftree
 sudo cp -r demo/loader some/mount/point/loader
 sudo umount some/mount/point
 sudo losetup -d /dev/loop4
