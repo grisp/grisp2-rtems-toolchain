@@ -222,7 +222,9 @@ ifneq ($(UNAME),Linux)
 	$(error Barebox can only be built on Linux)
 endif
 	cd $(SRC_BAREBOX) && rm -f .config
+	cd $(SRC_BAREBOX) && rm -f .env-extra
 	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/config .config
+	cd $(SRC_BAREBOX) && ln -s $(MAKEFILE_DIR)/barebox/env .env-extra
 	cd $(SRC_BAREBOX) && make ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- -j$(NUMCORE)
 	cp $(SRC_BAREBOX)/images/barebox-phytec-phycore-imx6ul-emmc-512mb.img barebox
 

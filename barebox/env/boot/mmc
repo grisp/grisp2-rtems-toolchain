@@ -1,0 +1,4 @@
+#!/bin/sh
+
+mmc0.probe=1
+boot mmc0
