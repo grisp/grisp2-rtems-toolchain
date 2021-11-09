@@ -24,6 +24,7 @@ running on GRiSP2. This includes:
 Building the toolchain on macOS requires the following dependencies:
 
 * [Xcode][1] or [Command Line Tools for Xcode][2].
+* `python` (2 or 3)
 * `dtc`
 * `u-boot-tools`
 
@@ -37,9 +38,9 @@ Building OpenOCD additionally requires
 
 **Install with Homebrew**
 
-```
-brew install dtc u-boot-tools
-brew install autoconf automake libtool libusb pkg-config
+```sh
+brew install python dtc u-boot-tools
+brew install autoconf automake libtool libusb pkg-config # OpenOCD
 ```
 
 #### Ubuntu
