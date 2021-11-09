@@ -127,6 +127,9 @@
 		pinctrl-1 = <&pinctrl_uart4_gpio>;
 		status = "okay";
 
+		/* UART mode */
+		grisp,uartdev = "/dev/ttyS3";
+
 		/* GPIO mode */
 		grisp,gpios =
 			<&gpio3 2 GPIO_ACTIVE_HIGH>, /* X1405.1 */
