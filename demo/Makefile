@@ -28,7 +28,7 @@ $(APP).bin: $(APP).exe
 $(APP).zImage: $(APP).bin
 	rm -f $<.gz
 	gzip -k -9 $<
-	mkimage -A arm -O linux -T kernel -a 0x80200000 -e 0x80200000 -n RTEMS -d $<.gz $@
+	mkimage.py -A arm -O linux -T kernel -a 0x80200000 -e 0x80200000 -n RTEMS -d $<.gz $@
 
 bin: all $(APP).bin
 
