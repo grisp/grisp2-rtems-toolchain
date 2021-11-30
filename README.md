@@ -207,6 +207,9 @@ Note that for bigger applications, that might need quite some time.
 
 ### Recovery
 
+Note: you should prefer to use Linux for this, on MacOS this works very
+unreliably. A Linux VM with proper USB access is sufficient.
+
 For some reason the boot loader has been damaged on your system? Here is the
 solution:
 
@@ -217,7 +220,7 @@ solution:
   `picocom ...` part with your preferred serial terminal application.
 
 ```
-./rtems/5/bin/imx_uart -nN /dev/ttyGRiSP ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec.bin && picocom -l -b 115200 /dev/ttyGRiSP
+./rtems/5/bin/imx_uart -nN /dev/ttyGRiSP ./rtems/5/etc/imx-loader.d/mx6ull_usb_work.conf barebox/barebox-phytec-phycore-imx6ul-emmc-512mb.img && picocom -l -b 115200 /dev/ttyGRiSP
 ```
 
 * Power-Cycle or Power up the GRiSP2. A reset is not enough!
@@ -251,7 +254,7 @@ commands.
 
 ```
 dd if=/dev/zero of=grisp2.img bs=1M count=128
-dd if=barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img of=grisp2.img conv=notrunc
+dd if=barebox/barebox-phytec-phycore-imx6ul-emmc-512mb.img of=grisp2.img conv=notrunc
 sudo modprobe loop
 sudo losetup /dev/loop4 grisp2.img
 echo 'type=83' | sudo sfdisk /dev/loop4
