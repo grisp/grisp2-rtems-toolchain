@@ -299,7 +299,8 @@ Init(rtems_task_argument arg)
 
 	init_led();
 #ifdef IS_GRISP2
-	pmod_rfid_init(SPI_BUS, 1);
+	// uncomment for testing RFID
+	//pmod_rfid_init(SPI_BUS, 1);
 #endif /* IS_GRISP2 */
 	start_shell();
 
