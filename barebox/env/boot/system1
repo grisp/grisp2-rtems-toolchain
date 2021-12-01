@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mmc1.probe=1
+of_property -sf /chosen grisp-mountpoint "/media/mmcsd-0-1/"
+boot mmc1.1
