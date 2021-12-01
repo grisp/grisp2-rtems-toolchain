@@ -4,4 +4,4 @@ if [ -n "$nv.boot.default" ]; then
 	exit
 fi
 
-global.boot.default="mmc emmc net"
+global.boot.default="sdcard system0 system1 net"
