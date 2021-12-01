@@ -4,7 +4,7 @@
  */
 
 /dts-v1/;
-#include "imx6ul.dtsi"
+#include "custom-imx6ul.dtsi"
 #include "imx6ul-phytec-phycore-som.dtsi"
 
 / {

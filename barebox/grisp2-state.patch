@@ -1,0 +1,12 @@
+diff --git a/arch/arm/dts/imx6ul-phytec-phycore-som-emmc.dts b/arch/arm/dts/imx6ul-phytec-phycore-som-emmc.dts
+index c51907665..019ec763e 100644
+--- a/arch/arm/dts/imx6ul-phytec-phycore-som-emmc.dts
++++ b/arch/arm/dts/imx6ul-phytec-phycore-som-emmc.dts
+@@ -8,6 +8,7 @@
+ 
+ #include <arm/imx6ul.dtsi>
+ #include "imx6ul-phytec-phycore-som.dtsi"
++#include "../../../../../fdt/imx6ul-grisp2-state.dtsi"
+ 
+ / {
+ 	model = "PHYTEC phyCORE-i.MX6 Ultra Light SOM with eMMC";
