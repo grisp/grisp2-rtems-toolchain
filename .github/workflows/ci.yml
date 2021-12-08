@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    timeout-minutes: 120
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       matrix:
@@ -72,3 +72,32 @@ jobs:
         shell: bash
         run: |
           make imx_uart
+      - name: Create package
+        run: make package
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: package-${{ runner.os }}
+          path: package/*
+
+  upload:
+    if: ${{ github.ref == 'refs/heads/master' }} # Only upload on master builds
+    needs: build
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Download a single artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: package-${{ runner.os }}
+          path: package
+      - name: Upload to S3
+        run: aws s3 cp --acl public-read package/* s3://grisp/platforms/grisp2/toolchain/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.GRISP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.GRISP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-1"

@@ -26,7 +26,8 @@ BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 CMAKE_TOOLCHAIN_TEMPLATE = $(MAKEFILE_DIR)/cryptoauthlib/grisp2-toolchain.cmake.in
 CMAKE_TOOLCHAIN_CONFIG = $(PREFIX)/share/grisp2-toolchain.cmake
-
+PACKAGE_DIR = package
+PACKAGE_PREFIX = grisp2-rtems-toolchain
 
 GRISP_TOOLCHAIN_REVISION = $(shell git rev-parse HEAD)
 GRISP_TOOLCHAIN_PLATFORM = grisp2
@@ -46,11 +47,17 @@ UNAME := $(shell uname -s)
 # macOS and FreeBSD
 ifneq (,$(filter $(UNAME),Darwin FreeBSD))
 	NUMCORE = $(shell sysctl -n hw.ncpu)
+	OS_NAME = macOS
+	OS_VERSION = $(shell sw_vers -productVersion)
 # Linux
 else ifeq ($(UNAME),Linux)
 	NUMCORE = $(shell nproc)
+	OS_NAME = Linux
+	OS_VERSION = $(shell uname -r)
 else
 	NUMCORE = 1
+	OS_NAME = unknown
+	OS_VERSION = unknown
 endif
 
 # Note: You have to rebuild BSP and all libs if you change that.
@@ -345,3 +352,8 @@ demo-clean:
 #H Start a shell with the environment for building for example the RTEMS BSP.
 shell:
 	$(SHELL)
+
+.PHONY: package
+package:
+	mkdir -p "${PACKAGE_DIR}"
+	cd "${PREFIX}" &&  tar -czf "../../${PACKAGE_DIR}/${PACKAGE_PREFIX}-${OS_NAME}-${OS_VERSION}-${GRISP_TOOLCHAIN_REVISION}.tar.gz" *
