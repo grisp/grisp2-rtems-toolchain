@@ -64,8 +64,11 @@ Use the following instructions to update the Barebox boot loader for GRiSP 2 to 
    
    barebox 2019.01.0-bsp-yocto-i.mx6ul-pd19.1.1 #5 Thu Aug 26 14:45:01 CEST 2021
    ...
+   ```
+
+   Make sure booting into Erlang from the new bootloader works completely. The complete testing boot sequence should be as follows: **Old Bootloader** → **New Bootloader** → **Erlang** (or other software that you want to boot).
    
-5. Flash the new boot loader (press y when prompted):
+5. Reset the board (into the old bootloader, or load the new bootloader again) and flash the new boot loader (press <kbd>y</kbd> when prompted):
 
    ```
    ...:/ barebox_update /mnt/mmc/barebox-phytec-phycore-imx6ul-emmc-512mb.img 
