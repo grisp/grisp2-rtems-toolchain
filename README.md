@@ -122,8 +122,9 @@ GRiSP2 might can't boot any more and you have to use the [recovery sequence][7].
 1. Type `mmc1.probe=1` to start the eMMC detection.
 1. Type `mmc0.probe=1` to start the SD detection.
 1. You can now do a ls on your SD card: `ls /mnt/mmc0.0`
-1. Copy your image to the eMMC with `cp /mnt/mmc0.0/grisp2.img /dev/mmc1`.
-   For big images, that needs quite some time.
+1. Copy your image to the eMMC, for big images, that needs quite some time.
+    1. With a raw image, use command `cp /mnt/mmc/grisp2_emmc.img /dev/mmc1`.
+    1. With a compressed image, use command `uncompress /mnt/mmc/grisp2_emmc.img.gz /dev/mmc1`.
 1. Reset the system with `reset` on the shell. Barebox should now boot your
    application.
 
@@ -229,15 +230,16 @@ solution:
   bit of time (nearly a minute).
 * Interrupt the `barebox` start when it tells you to
   `Hit m for menu or any to stop autoboot:    1`
-* Use the eMMC image from `barebox/barebox_emmc.zip` (unzip it) and
+* Use the eMMC image from `barebox/grisp2_emmc.img.gz` and
   follow the steps from the section [Writing an Image to eMMC][5]. The image
-  contains a barebox and an empty partition.
+  contains the initial factory image, with barebox, a first partition with
+  the grisp erlang demo and an uninitialized second partition.
 * Power down the GRiSP2 and remove the `BOOT_MODE` Jumpers.
 * Power up the GRiSP2. You should now get a Bootloader again. Interrupt the boot
   when it tells you to `Hit m for menu or any to stop autoboot:`
-* Now you can copy new files onto the empty partition (mounted at `/mnt/emmc`).
+* Now you can copy new files onto the partition (mounted at `/mnt/emmc`).
   If you want to copy from an SD Card you have to do a `mmc0.probe=1` first.
-  Then you can access the SD Card in `/mnt/mmc0.0`.
+  Then you can access the SD Card in `/mnt/mmc`.
 
 ## eMMC Image
 
@@ -253,13 +255,13 @@ loop device. Otherwise you might destroy your Linux installation with these
 commands.
 
 ```
-dd if=/dev/zero of=grisp2.img bs=1M count=128
-dd if=barebox/barebox-phytec-phycore-imx6ul-emmc-512mb.img of=grisp2.img conv=notrunc
+dd if=/dev/zero of=grisp2_emmc.img bs=1M count=128
+dd if=barebox/barebox-phytec-phycore-imx6ul-emmc-512mb.img of=grisp2_emmc.img conv=notrunc
 sudo modprobe loop
-sudo losetup /dev/loop4 grisp2.img
+sudo losetup /dev/loop4 grisp2_emmc.img
 echo 'type=83' | sudo sfdisk /dev/loop4
 sudo partprobe /dev/loop4
-sudo mkfs.vfat -n "GRISP2" /dev/loop4p1
+sudo mkfs.vfat -n "GRISP2" -s 8 /dev/loop4p1
 sudo mount /dev/loop4p1 some/mount/point
 sudo cp demo/b-imx7/demo.zImage some/mount/point/zImage
 sudo cp fdt/b-dtb/imx6ul-grisp2.dtb some/mount/point/oftree

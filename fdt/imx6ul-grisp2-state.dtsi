@@ -21,23 +21,18 @@
 		bootstate {
 			#address-cells = <1>;
 			#size-cells = <1>;
-			booted_system {
+			update_system {
 				reg = <0x0 0x4>;
 				type = "uint32";
 				default = <0>;
 			};
-			update_system {
+			update_boot_count {
 				reg = <0x4 0x4>;
 				type = "uint32";
 				default = <0>;
 			};
-			update_boot_count {
-				reg = <0x8 0x4>;
-				type = "uint32";
-				default = <0>;
-			};
 			active_system {
-				reg = <0xc 0x4>;
+				reg = <0x8 0x4>;
 				type = "uint32";
 				default = <0>;
 			};

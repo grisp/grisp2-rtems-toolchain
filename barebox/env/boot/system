@@ -3,18 +3,10 @@ if [ $state.bootstate.update_boot_count -gt 0 ]; then
 	S=$state.bootstate.update_system
 	let state.bootstate.update_boot_count=$state.bootstate.update_boot_count-1
 	echo "Selecting updated system$S (${state.bootstate.update_boot_count} remaining)"
-	state.bootstate.booted_system=$S
 	state -s
 else
-	if [ $state.bootstate.booted_system != $state.bootstate.active_system ]; then
-		S=$state.bootstate.active_system
-		echo "Selecting back active system$S"
-		state.bootstate.booted_system=$S
-		state -s
-	else
-		S=$state.bootstate.active_system
-		echo "Selecting active system$S"
-	fi
+	S=$state.bootstate.active_system
+	echo "Selecting active system$S"
 fi
 if [ $S = 0 ]; then
 	boot system0

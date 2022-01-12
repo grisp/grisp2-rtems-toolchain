@@ -4,4 +4,4 @@ if [ -n "$nv.boot.default" ]; then
 	exit
 fi
 
-global.boot.default="sdcard system net"
+global.boot.default="sdcard system try-again"
