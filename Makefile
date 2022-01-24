@@ -82,7 +82,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib
+install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -223,8 +223,18 @@ fdt:
 	make PREFIX=$(PREFIX) CPP=$(TARGET)-cpp -C fdt clean install
 
 .PHONY: barebox
+barebox: barebox-build barebox-install
+
+.PHONY: barebox-install
+# Install the bootloader
+barebox-install:
+	mkdir -p $(PREFIX)/barebox
+	cp $(MAKEFILE_DIR)/barebox/barebox-phytec-phycore-imx6ul-emmc-512mb.img  $(PREFIX)/barebox
+
+.PHONY: barebox-build
 #H Build the bootloader
-barebox:
+barebox-build:
+
 ifneq ($(UNAME),Linux)
 	$(error Barebox can only be built on Linux)
 endif
