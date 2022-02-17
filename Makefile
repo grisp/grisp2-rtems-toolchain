@@ -366,4 +366,4 @@ shell:
 .PHONY: package
 package:
 	mkdir -p "${PACKAGE_DIR}"
-	cd "${PREFIX}" &&  tar -czf "../../${PACKAGE_DIR}/${PACKAGE_PREFIX}-${OS_NAME}-${OS_VERSION}-${GRISP_TOOLCHAIN_REVISION}.tar.gz" *
+	cd "${PREFIX}" &&  tar -czf "../../${PACKAGE_DIR}/${PACKAGE_PREFIX}_${OS_NAME}_${OS_VERSION}_${GRISP_TOOLCHAIN_REVISION}.tar.gz" *
