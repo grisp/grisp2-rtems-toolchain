@@ -16,8 +16,8 @@
 	branch = master
 [submodule "external/barebox"]
 	path = external/barebox
-	url = https://github.com/grisp/barebox.git
-	branch = v2020.03.0-GRiSP2
+	url = https://git.phytec.de/git/barebox
+	branch = v2022.02.0-phy
 [submodule "external/inih"]
 	path = external/libinih/inih
 	url = https://github.com/grisp/inih.git

@@ -1,11 +1,12 @@
 diff --git a/arch/arm/dts/imx6ul-phytec-phycore-som-emmc.dts b/arch/arm/dts/imx6ul-phytec-phycore-som-emmc.dts
-index c51907665..019ec763e 100644
+index 50ce75f12..d13b50fc8 100644
 --- a/arch/arm/dts/imx6ul-phytec-phycore-som-emmc.dts
 +++ b/arch/arm/dts/imx6ul-phytec-phycore-som-emmc.dts
-@@ -8,6 +8,7 @@
- 
+@@ -10,7 +10,7 @@
+ #endif
  #include <arm/imx6ul.dtsi>
  #include "imx6ul-phytec-phycore-som.dtsi"
+-#include "imx6ul-phytec-state.dtsi"
 +#include "../../../../../fdt/imx6ul-grisp2-state.dtsi"
  
  / {
