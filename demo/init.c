@@ -289,8 +289,11 @@ Init(rtems_task_argument arg)
 	grisp_init_dhcpcd(PRIO_DHCP);
 
 	grisp_led_set2(false, false, true);
-	sleep(3);
-	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA, create_wlandev);
+	if (!grisp_is_industrialgrisp()) {
+		sleep(3);
+		grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA,
+		    create_wlandev);
+	}
 
 #ifdef EVENT_RECORDING
 	rtems_record_start_server(10, 1234, 10);
