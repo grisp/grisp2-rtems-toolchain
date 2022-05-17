@@ -228,6 +228,7 @@ pmod_rfid_transfer(
 		.bits_per_word = 8,
 		.mode = SPI_MODE_1,
 		.cs = ctx->cs,
+		.cs_change = true,
 	};
 
 	verb_print(ctx, VERBOSE_ALL, "Tx: ");
