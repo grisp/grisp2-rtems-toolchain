@@ -1,6 +1,7 @@
 /external/fdt/*.tar.gz
 /fdt/b-dtb
 /rtems/5
+/rtems/6
 build
 /demo*/b-*/
 external/libinih/b-imx7
