@@ -200,7 +200,7 @@
 		>;
 	};
 
-	pinctrl_spi3_gpio: spi3grp {
+	pinctrl_spi3_gpio: spi3gpiogrp {
 		fsl,pins = <
 			MX6UL_PAD_UART2_RX_DATA__GPIO1_IO21	0x8	/* SPI3_SCK / X803.4 */
 			MX6UL_PAD_UART2_CTS_B__GPIO1_IO22	0x8	/* SPI3_MOSI / X803.2 */
