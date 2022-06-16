@@ -202,6 +202,13 @@ the process. You can then start a gdb that connects to the server using
 command to the normal gdb that restarts the target and reloads the application.
 Note that for bigger applications, that might need quite some time.
 
+### Notes for MacOS
+
+To build OpenOCD on mac, you need texinfo 6.7 from brw but also add it to th path:
+
+    export PATH=/usr/local/opt/texinfo/bin:$PATH
+    make openocd
+
 ## Boot Loader
 
 * [Instructions for updating the boot loader on GRiSP 2](doc/grisp2/bootloader-update.md)

@@ -23,7 +23,7 @@
 	url = https://github.com/grisp/inih.git
 [submodule "external/openocd-code"]
 	path = external/openocd-code
-	url = https://git.code.sf.net/p/openocd/code
+	url = https://github.com/openocd-org/openocd.git
 [submodule "external/imx_usb_loader"]
 	path = external/imx_usb_loader
 	url = https://github.com/boundarydevices/imx_usb_loader
