@@ -229,7 +229,7 @@ barebox: barebox-build barebox-install
 # Install the bootloader
 barebox-install:
 	mkdir -p $(PREFIX)/barebox
-	cp $(MAKEFILE_DIR)/barebox/barebox-phytec-phycore-imx6ul-emmc-512mb.img  $(PREFIX)/barebox
+	cp $(MAKEFILE_DIR)/barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img  $(PREFIX)/barebox
 
 .PHONY: barebox-build
 #H Build the bootloader
@@ -248,7 +248,7 @@ endif
 			patch -f -p1 < $(MAKEFILE_DIR)/barebox/grisp2-state.patch; \
 		fi
 	cd $(SRC_BAREBOX) && make ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- -j$(NUMCORE)
-	cp $(SRC_BAREBOX)/images/barebox-phytec-phycore-imx6ul-emmc-512mb.img barebox
+	cp $(SRC_BAREBOX)/images/barebox-phytec-phycore-imx6ull-emmc-512mb.img barebox
 
 .PHONY: openocd
 #H Build OpenOCD for debugging
