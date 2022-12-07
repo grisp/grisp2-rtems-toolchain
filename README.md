@@ -27,6 +27,7 @@ Building the toolchain on macOS requires the following dependencies:
 * `python` (2 or 3)
 * `dtc`
 * `u-boot-tools`
+* `texinfo`
 
 Building OpenOCD additionally requires
 
@@ -39,7 +40,7 @@ Building OpenOCD additionally requires
 **Install with Homebrew**
 
 ```sh
-brew install python dtc u-boot-tools
+brew install python dtc u-boot-tools texinfo
 brew install autoconf automake libtool libusb pkg-config # OpenOCD
 ```
 
