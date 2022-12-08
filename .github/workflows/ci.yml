@@ -75,10 +75,12 @@ jobs:
       - name: Create package
         run: make package
       - name: Upload package artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: package-${{ runner.os }}
-          path: package/*
+          path: |
+            package/*
+            external/rtems-source-builder/rtems/rsb-report-*.txt
 
   upload:
     if: ${{ github.ref == 'refs/heads/master' }} # Only upload on master builds
@@ -90,11 +92,13 @@ jobs:
           - macOS-latest
     runs-on: ${{ matrix.os }}
     steps:
+
       - name: Download a single artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: package-${{ runner.os }}
           path: package
+
       - name: Upload to S3
         run: aws s3 cp --acl public-read package/* s3://grisp/platforms/grisp2/toolchain/
         env:
