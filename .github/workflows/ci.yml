@@ -43,6 +43,8 @@ jobs:
             echo "$RUNNER_OS not supported"
             exit 1
           fi
+      - name: Setup SSH session
+        uses: lhotari/action-upterm@v1
       - name: Build toolchain
         shell: bash
         run: |
