@@ -56,7 +56,11 @@ Building the toolchain on Ubuntu requires the following packages:
 * `device-tree-compiler`
 * `u-boot-tools`
 * `lzop`
-* `python`
+* `libusb-1.0-0-dev`
+* `python3`
+* `python-is-python3`
+* `libpython3-dev`
+* `python3-dev`
 
 Building OpenOCD additionally requires
 
@@ -65,7 +69,7 @@ Building OpenOCD additionally requires
 **Install with apt-get**
 
 ```
-sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools lzop libusb-1.0-0-dev python-dev
+sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools lzop libusb-1.0-0-dev python3 python-is-python3 libpython3-dev python3-dev
 ```
 
 ### Building
@@ -143,10 +147,10 @@ One way to write an Image to eMMC is via the bootloader:
         log-dhcp
         expand-hosts
         local=/my-pc.eb.localhost/
-        
+
         enable-tftp=eth0
         tftp-root=/srv/tftpboot/
-        
+
         ##############################
         # GRiSP2
         dhcp-host=50:2d:f4:14:26:0b,GRiSP2Proto009,set:grisp2
