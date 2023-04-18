@@ -56,7 +56,6 @@ Building the toolchain on Ubuntu requires the following packages:
 * `device-tree-compiler`
 * `u-boot-tools`
 * `lzop`
-* `libusb-1.0-0-dev`
 * `python3`
 * `python-is-python3`
 * `libpython3-dev`
