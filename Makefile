@@ -19,6 +19,7 @@ SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 SRC_CRYPTOAUTHLIB = $(MAKEFILE_DIR)/external/cryptoauthlib
+SRC_OPENBLAS = $(MAKEFILE_DIR)/external/OpenBLAS
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
@@ -82,7 +83,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install
+install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install #OpenBLAS
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -345,6 +346,20 @@ cryptoauthlib: cmake_toolchain_config
 			$(PREFIX)/$(TARGET)/$(BSP)/lib/include/ && \
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_config.h && \
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_iface.h
+
+.PHONY: OpenBLAS
+OpenBLAS: cmake_toolchain_config
+	mkdir -p $(SRC_OPENBLAS)/build
+	mkdir -p $(SRC_OPENBLAS)/install
+	cd $(SRC_OPENBLAS) && \
+		make BINARY=32 \
+			CC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gcc -DOS_EMBEDDED' \
+			HOSTCC=gcc \
+			TARGET=ARMV7 \
+			NO_LAPACK=1 \
+			NOFORTRAN=1 \
+			NO_SHARED=1 \
+			USE_THREAD=0
 
 .PHONY: demo
 #H Build the demo application.

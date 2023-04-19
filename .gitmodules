@@ -31,3 +31,7 @@
 	path = external/cryptoauthlib
 	url = https://github.com/grisp/cryptoauthlib
 	branch = GRiSP2
+[submodule "external/OpenBLAS"]
+	path = external/OpenBLAS
+	url = https://github.com/xianyi/OpenBLAS
+	tag = v0.3.23
