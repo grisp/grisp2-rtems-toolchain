@@ -347,19 +347,27 @@ cryptoauthlib: cmake_toolchain_config
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_config.h && \
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_iface.h
 
-.PHONY: OpenBLAS
-OpenBLAS: cmake_toolchain_config
-	mkdir -p $(SRC_OPENBLAS)/build
-	mkdir -p $(SRC_OPENBLAS)/install
-	cd $(SRC_OPENBLAS) && \
-		make BINARY=32 \
+OPENBLAS_FLAGS=\
+			BINARY=32 \
 			CC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gcc -DOS_EMBEDDED' \
 			HOSTCC=gcc \
 			TARGET=ARMV7 \
 			NO_LAPACK=1 \
 			NOFORTRAN=1 \
 			NO_SHARED=1 \
-			USE_THREAD=0
+			USE_THREAD=0 \
+			ONLY_CBLAS=1
+
+.PHONY: OpenBLAS
+OpenBLAS:
+	mkdir -p $(SRC_OPENBLAS)/install
+	cd $(SRC_OPENBLAS) && \
+		make $(OPENBLAS_FLAGS) && \
+		make PREFIX=$(SRC_OPENBLAS)/install $(OPENBLAS_FLAGS) install
+	cp -r $(SRC_OPENBLAS)/install/lib/libopenblas.a \
+			$(PREFIX)/$(TARGET)/$(BSP)/lib/
+	cp -r $(SRC_OPENBLAS)/install/include/* \
+			$(PREFIX)/$(TARGET)/$(BSP)/lib/include
 
 .PHONY: demo
 #H Build the demo application.
