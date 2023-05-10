@@ -83,7 +83,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install #OpenBLAS
+install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install OpenBLAS
 
 .PHONY: submodule-update
 #H Update the submodules.
