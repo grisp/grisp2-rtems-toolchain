@@ -347,9 +347,11 @@ cryptoauthlib: cmake_toolchain_config
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_config.h && \
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_iface.h
 
+
 OPENBLAS_FLAGS=\
 			BINARY=32 \
-			CC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gcc -DOS_EMBEDDED' \
+			CC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gcc' \
+			CFLAGS='-mfloat-abi=soft -mfpu=vfp ' \
 			HOSTCC=gcc \
 			TARGET=ARMV7 \
 			NO_LAPACK=1 \
@@ -358,12 +360,15 @@ OPENBLAS_FLAGS=\
 			USE_THREAD=0 \
 			ONLY_CBLAS=1
 
+RANLIB=$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ranlib
+
 .PHONY: OpenBLAS
 OpenBLAS:
 	mkdir -p $(SRC_OPENBLAS)/install
 	cd $(SRC_OPENBLAS) && \
 		make $(OPENBLAS_FLAGS) && \
 		make PREFIX=$(SRC_OPENBLAS)/install $(OPENBLAS_FLAGS) install
+	$(RANLIB) $(SRC_OPENBLAS)/install/lib/libopenblas.a
 	cp -r $(SRC_OPENBLAS)/install/lib/libopenblas.a \
 			$(PREFIX)/$(TARGET)/$(BSP)/lib/
 	cp -r $(SRC_OPENBLAS)/install/include/* \
