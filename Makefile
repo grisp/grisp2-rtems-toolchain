@@ -351,7 +351,7 @@ cryptoauthlib: cmake_toolchain_config
 OPENBLAS_FLAGS=\
 			BINARY=32 \
 			CC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gcc' \
-			CFLAGS='-mfloat-abi=soft -mfpu=vfp ' \
+			CFLAGS=' -DOS_EMBEDDED -mfloat-abi=hard -mfpu=vfp ' \
 			HOSTCC=gcc \
 			TARGET=ARMV7 \
 			NO_LAPACK=1 \
