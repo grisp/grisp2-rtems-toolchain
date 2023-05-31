@@ -19,7 +19,7 @@ SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 SRC_CRYPTOAUTHLIB = $(MAKEFILE_DIR)/external/cryptoauthlib
-SRC_OPENBLAS = $(MAKEFILE_DIR)/external/OpenBLAS
+SRC_BLAS = $(MAKEFILE_DIR)/external/BLAS
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
@@ -83,7 +83,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install OpenBLAS
+install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -104,6 +104,7 @@ toolchain:
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
 	    --prefix=$(PREFIX) \
 	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
+		--with-fortran \
 	    $(RTEMS_VERSION)/rtems-$(ARCH)
 	rm -rf $(RSB)/rtems/build
 
@@ -348,31 +349,37 @@ cryptoauthlib: cmake_toolchain_config
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_iface.h
 
 
-OPENBLAS_FLAGS=\
-			BINARY=32 \
+BLAS_TOOLS=\
+			BLLIB='$(MAKEFILE_DIR)external/BLAS/CBLAS/lib/blas_ARM.a' \
+			CBLIB='$(MAKEFILE_DIR)external/BLAS/CBLAS/lib/cblas_ARM.a' \
 			CC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gcc' \
-			CFLAGS=' -DOS_EMBEDDED -mfloat-abi=hard -mfpu=vfp ' \
-			HOSTCC=gcc \
-			TARGET=ARMV7 \
-			NO_LAPACK=1 \
-			NOFORTRAN=1 \
-			NO_SHARED=1 \
-			USE_THREAD=0 \
-			ONLY_CBLAS=1
+			FC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gfortran' \
+			RANLIB='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ranlib' \
+			AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar' \
+			ARCH=$(AR)
+
 
 RANLIB=$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ranlib
+AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar'
 
-.PHONY: OpenBLAS
-OpenBLAS:
-	mkdir -p $(SRC_OPENBLAS)/install
-	cd $(SRC_OPENBLAS) && \
-		make $(OPENBLAS_FLAGS) && \
-		make PREFIX=$(SRC_OPENBLAS)/install $(OPENBLAS_FLAGS) install
-	$(RANLIB) $(SRC_OPENBLAS)/install/lib/libopenblas.a
-	cp -r $(SRC_OPENBLAS)/install/lib/libopenblas.a \
-			$(PREFIX)/$(TARGET)/$(BSP)/lib/
-	cp -r $(SRC_OPENBLAS)/install/include/* \
-			$(PREFIX)/$(TARGET)/$(BSP)/lib/include
+.PHONY: blas
+blas:
+	cd $(SRC_BLAS) &&\
+		make download &&\
+		cp blas_make.inc BLAS-3.11.0/make.inc &&\
+		cp Makefile.in CBLAS/Makefile.in &&\
+		cd BLAS-3.11.0 &&\
+		make $(BLAS_TOOLS) &&\
+		cd ../CBLAS &&\
+		make $(BLAS_TOOLS) alllib &&\
+		cd lib &&\
+		$(AR) -x blas_ARM.a &&\
+		$(AR) -x cblas_ARM.a &&\
+		$(AR) -qc libblas.a *.o &&\
+		rm *.o &&\
+		$(RANLIB) libblas.a
+	cp $(SRC_BLAS)/CBLAS/lib/libblas.a $(PREFIX)/$(TARGET)/$(BSP)/lib/libblas.a
+	cp $(SRC_BLAS)/CBLAS/include/cblas.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cblas.h
 
 .PHONY: demo
 #H Build the demo application.
