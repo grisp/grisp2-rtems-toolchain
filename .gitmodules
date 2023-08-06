@@ -31,3 +31,6 @@
 	path = external/cryptoauthlib
 	url = https://github.com/grisp/cryptoauthlib
 	branch = GRiSP2
+[submodule "external/lapack"]
+	path = external/lapack
+	url = https://github.com/Reference-LAPACK/lapack.git
