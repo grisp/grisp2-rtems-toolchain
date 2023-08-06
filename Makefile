@@ -19,7 +19,7 @@ SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 SRC_CRYPTOAUTHLIB = $(MAKEFILE_DIR)/external/cryptoauthlib
-SRC_BLAS = $(MAKEFILE_DIR)/external/BLAS
+SRC_BLAS = $(MAKEFILE_DIR)/external/lapack
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
@@ -363,23 +363,25 @@ RANLIB=$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/r
 AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar'
 
 .PHONY: blas
+#H Build the BLAS-LAPACKE library.
 blas:
+	cp external/BLAS/make.inc $(SRC_BLAS) 
+	cd $(SRC_BLAS) && make blaslib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && make cblaslib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && make lapacklib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && make lapackelib $(BLAS_TOOLS)
 	cd $(SRC_BLAS) &&\
-		make download &&\
-		cp blas_make.inc BLAS-3.11.0/make.inc &&\
-		cp Makefile.in CBLAS/Makefile.in &&\
-		cd BLAS-3.11.0 &&\
-		make $(BLAS_TOOLS) &&\
-		cd ../CBLAS &&\
-		make $(BLAS_TOOLS) alllib &&\
-		cd lib &&\
-		$(AR) -x blas_ARM.a &&\
-		$(AR) -x cblas_ARM.a &&\
+		$(AR) -x librefblas.a &&\
+		$(AR) -x libcblas.a &&\
+		$(AR) -x liblapack.a &&\
+		$(AR) -x liblapacke.a &&\
 		$(AR) -qc libblas.a *.o &&\
 		rm *.o &&\
 		$(RANLIB) libblas.a
-	cp $(SRC_BLAS)/CBLAS/lib/libblas.a $(PREFIX)/$(TARGET)/$(BSP)/lib/libblas.a
+	cp $(SRC_BLAS)/libblas.a $(PREFIX)/$(TARGET)/$(BSP)/lib/libblas.a
 	cp $(SRC_BLAS)/CBLAS/include/cblas.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cblas.h
+	cp $(SRC_BLAS)/CBLAS/include/cblas_mangling.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cblas_mangling.h
+	cp $(SRC_BLAS)/LAPACKE/include/*.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/
 
 .PHONY: demo
 #H Build the demo application.
