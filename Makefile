@@ -19,6 +19,7 @@ SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 SRC_CRYPTOAUTHLIB = $(MAKEFILE_DIR)/external/cryptoauthlib
+SRC_BLAS = $(MAKEFILE_DIR)/external/lapack
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
@@ -82,7 +83,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install
+install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -103,6 +104,7 @@ toolchain:
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
 	    --prefix=$(PREFIX) \
 	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
+		--with-fortran \
 	    $(RTEMS_VERSION)/rtems-$(ARCH)
 	rm -rf $(RSB)/rtems/build
 
@@ -345,6 +347,41 @@ cryptoauthlib: cmake_toolchain_config
 			$(PREFIX)/$(TARGET)/$(BSP)/lib/include/ && \
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_config.h && \
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_iface.h
+
+
+BLAS_TOOLS=\
+			BLLIB='$(MAKEFILE_DIR)external/BLAS/CBLAS/lib/blas_ARM.a' \
+			CBLIB='$(MAKEFILE_DIR)external/BLAS/CBLAS/lib/cblas_ARM.a' \
+			CC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gcc' \
+			FC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gfortran' \
+			RANLIB='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ranlib' \
+			AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar' \
+			ARCH=$(AR)
+
+
+RANLIB=$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ranlib
+AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar'
+
+.PHONY: blas
+#H Build the BLAS-LAPACKE library.
+blas:
+	cp external/BLAS/make.inc $(SRC_BLAS) 
+	cd $(SRC_BLAS) && make blaslib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && make cblaslib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && make lapacklib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && make lapackelib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) &&\
+		$(AR) -x librefblas.a &&\
+		$(AR) -x libcblas.a &&\
+		$(AR) -x liblapack.a &&\
+		$(AR) -x liblapacke.a &&\
+		$(AR) -qc libblas.a *.o &&\
+		rm *.o &&\
+		$(RANLIB) libblas.a
+	cp $(SRC_BLAS)/libblas.a $(PREFIX)/$(TARGET)/$(BSP)/lib/libblas.a
+	cp $(SRC_BLAS)/CBLAS/include/cblas.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cblas.h
+	cp $(SRC_BLAS)/CBLAS/include/cblas_mangling.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cblas_mangling.h
+	cp $(SRC_BLAS)/LAPACKE/include/*.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/
 
 .PHONY: demo
 #H Build the demo application.
