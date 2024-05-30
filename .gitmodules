@@ -1,7 +1,7 @@
 [submodule "rtems-source-builder"]
 	path = external/rtems-source-builder
 	url = https://github.com/grisp/rtems-source-builder.git
-	branch = master
+	branch = grisp2
 [submodule "rtems"]
 	path = external/rtems
 	url = https://github.com/grisp/rtems.git
