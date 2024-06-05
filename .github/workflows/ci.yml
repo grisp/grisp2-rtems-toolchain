@@ -32,6 +32,8 @@ jobs:
               device-tree-compiler \
               u-boot-tools \
               lzop \
+              libgmp3-dev \
+              libmpfr-dev \
               libusb-1.0-0-dev \
               python3 \
               python-is-python3 \
