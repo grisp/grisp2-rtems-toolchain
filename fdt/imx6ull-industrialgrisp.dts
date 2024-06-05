@@ -1,0 +1,266 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR BSD-2-Clause)
+/*
+ * Copyright (C) 2020 embedded brains GmbH.
+ */
+
+/dts-v1/;
+#include "custom-imx6ul.dtsi"
+#include "imx6ul-phytec-phycore-som.dtsi"
+
+/ {
+	model = "IndustrialGRiSP";
+	compatible = "embeddedbrains,industrialgrisp", "phytec,imx6ul-pcl063-emmc", "fsl,imx6ull";
+
+	gpio_leds_grisp2: leds {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpioleds_grisp2>;
+		compatible = "gpio-leds";
+
+		igrisp-mcu-led {
+			gpios = <&gpio1 25 GPIO_ACTIVE_HIGH>;
+		};
+		igrisp-rfid-led {
+			gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	pmod_spi: pmod-spi {
+		pinctrl-names = "default", "gpio";
+		pinctrl-0 = <&pinctrl_spi3>;
+		pinctrl-1 = <&pinctrl_spi3_gpio>;
+		status = "okay";
+
+		/* SPI mode */
+		grisp,spi-alias = "spi2"; /* use with spi_bus_register_imx */
+		grisp,int-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+
+		/* GPIO mode */
+		grisp,gpios =
+			<&gpio1 20 GPIO_ACTIVE_HIGH>, /* X803.1 */
+			<&gpio1 22 GPIO_ACTIVE_HIGH>, /* X803.2 */
+			<&gpio1 23 GPIO_ACTIVE_HIGH>, /* X803.3 */
+			<&gpio1 21 GPIO_ACTIVE_HIGH>, /* X803.4 */
+			<&gpio1 3  GPIO_ACTIVE_HIGH>, /* X803.7 */
+			<&gpio5 0  GPIO_ACTIVE_HIGH>, /* X803.8 */
+			<&gpio1 1  GPIO_ACTIVE_HIGH>, /* X803.9 */
+			<&gpio1 18 GPIO_ACTIVE_HIGH>; /* X803.10 */
+	};
+};
+
+&fec1 {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_enet1_igrisp>;
+
+	/delete-node/ mdio;
+};
+
+&fec2 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enet2>;
+	phy-mode = "rmii";
+	phy-handle = <&ethphy2>;
+
+	mdio: mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		ethphy1: ethernet-phy@1 {
+			reg = <1>;
+			interrupt-parent = <&gpio1>;
+			interrupts = <2 IRQ_TYPE_LEVEL_LOW>;
+			micrel,led-mode = <1>;
+			clocks = <&clks IMX6UL_CLK_ENET_REF>;
+			clock-names = "rmii-ref";
+			status = "okay";
+		};
+
+		ethphy2: ethernet-phy@2 {
+			reg = <2>;
+			interrupt-parent = <&gpio4>;
+			interrupts = <16 IRQ_TYPE_LEVEL_LOW>;
+			micrel,led-mode = <1>;
+			clocks = <&clks IMX6UL_CLK_ENET_REF>;
+			clock-names = "rmii-ref";
+			status = "okay";
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+
+	at24mac402_eeprom: eeprom@57 {
+		compatible = "atmel,24c02";
+		reg = <0x57>;
+		status = "okay";
+	};
+	at24mac402_eui: eeprom@5f {
+		compatible = "atmel,at24mac402-eui";
+		reg = <0x5f>;
+		status = "okay";
+	};
+	atecc608: cryptoauth@36 {
+		compatible = "microchip,atecc608", "atmel,at24c16";
+		reg = <0x36>;
+		status = "okay";
+	};
+};
+
+&usdhc2 {
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&ecspi1 {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_spi1>;
+
+	cs-gpios = <&gpio4 26 GPIO_ACTIVE_HIGH>,
+		   <&gpio3 10 GPIO_ACTIVE_HIGH>,
+		   <&gpio3 11 GPIO_ACTIVE_HIGH>;
+
+	rfid: rfid@0 {
+		compatible = "ti,trf7970a";
+		reg = <0>;
+
+		spi-max-frequency = <2000000>;
+		interrupt-parent = <&gpio4>;
+		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
+		grisp,int-gpios = <&gpio4 19 GPIO_ACTIVE_HIGH>;
+		grisp,led-gpios = <&gpio3 4 GPIO_ACTIVE_HIGH>;
+	};
+
+	dio1: dio@2 {
+		compatible = "maxim,max14906";
+		/* Really 2 for DIO1: The SS pins are numbered odd! */
+		reg = <2>;
+
+		spi-max-frequency = <2000000>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <0 IRQ_TYPE_LEVEL_HIGH>;
+		maxim,fault = <&gpio3 0 GPIO_ACTIVE_HIGH>;
+		maxim,ready = <&gpio3 1 GPIO_ACTIVE_HIGH>;
+	};
+
+	dio2: dio@1 {
+		compatible = "maxim,max14906";
+		/* Really 1 for DIO2: The SS pins are numbered odd! */
+		reg = <1>;
+
+		spi-max-frequency = <2000000>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <2 IRQ_TYPE_LEVEL_HIGH>;
+		maxim,fault = <&gpio3 2 GPIO_ACTIVE_HIGH>;
+		maxim,ready = <&gpio3 3 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&ecspi3 {
+	status = "okay";
+	pinctrl-0 = <&pinctrl_spi3>;
+
+	cs-gpios = <&gpio1 20 GPIO_ACTIVE_HIGH>;
+
+	grisp,int-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+};
+
+&iomuxc {
+	pinctrl_spi1: spi1grp {
+		fsl,pins = <
+			MX6UL_PAD_CSI_DATA04__ECSPI1_SCLK	0x8	/* SPI_SCK */
+			MX6UL_PAD_CSI_DATA06__ECSPI1_MOSI	0x8	/* SPI_MOSI */
+			MX6UL_PAD_CSI_DATA07__ECSPI1_MISO	0x2000	/* SPI_MISO */
+
+			MX6UL_PAD_CSI_DATA05__GPIO4_IO26	0x8	/* SPI_SS0 */
+			MX6UL_PAD_LCD_DATA05__GPIO3_IO10	0x8	/* SPI_SS1 */
+			MX6UL_PAD_LCD_DATA06__GPIO3_IO11	0x8	/* SPI_SS2/SPI_GPIO0 */
+			MX6UL_PAD_LCD_RESET__GPIO3_IO04		0x8	/* SPI_GPIO1 */
+			MX6UL_PAD_CSI_DATA03__GPIO4_IO24	0x8	/* SPI_RESET */
+			MX6UL_PAD_CSI_VSYNC__GPIO4_IO19		0x8	/* SPI_INT */
+			MX6UL_PAD_LCD_ENABLE__GPIO3_IO01	0x8	/* SPI_READY1 */
+			MX6UL_PAD_LCD_CLK__GPIO3_IO00		0x8	/* SPI_FAULT1 */
+			MX6UL_PAD_LCD_VSYNC__GPIO3_IO03		0x8	/* SPI_READY2 */
+			MX6UL_PAD_LCD_HSYNC__GPIO3_IO02		0x8	/* SPI_FAULT2 */
+		>;
+	};
+
+	pinctrl_spi3: spi3grp {
+		fsl,pins = <
+			MX6UL_PAD_UART2_RX_DATA__ECSPI3_SCLK	0x8	/* SPI3_SCK */
+			MX6UL_PAD_UART2_CTS_B__ECSPI3_MOSI	0x8	/* SPI3_MOSI */
+			MX6UL_PAD_UART2_RTS_B__ECSPI3_MISO	0x2000	/* SPI3_MISO */
+
+			MX6UL_PAD_UART2_TX_DATA__GPIO1_IO20	0x8	/* SPI3_SS0 */
+			MX6UL_PAD_GPIO1_IO01__GPIO1_IO01	0x8	/* SPI3_GPIO0 */
+			MX6UL_PAD_GPIO1_IO03__GPIO1_IO03	0x8	/* SPI3_INT */
+			MX6UL_PAD_SNVS_TAMPER0__GPIO5_IO00	0x8	/* SPI3_RESET */
+			MX6UL_PAD_UART1_CTS_B__GPIO1_IO18	0x8	/* SPI3_GPIO1 */
+		>;
+	};
+
+	pinctrl_spi3_gpio: spi3gpiogrp {
+		fsl,pins = <
+			MX6UL_PAD_UART2_RX_DATA__GPIO1_IO21	0x8	/* SPI3_SCK / X803.4 */
+			MX6UL_PAD_UART2_CTS_B__GPIO1_IO22	0x8	/* SPI3_MOSI / X803.2 */
+			MX6UL_PAD_UART2_RTS_B__GPIO1_IO23	0x8	/* SPI3_MISO / X803.3 */
+			MX6UL_PAD_UART2_TX_DATA__GPIO1_IO20	0x8	/* SPI3_SS0 / X803.1 */
+			MX6UL_PAD_GPIO1_IO01__GPIO1_IO01	0x8	/* SPI3_GPIO0 / X803.9 */
+			MX6UL_PAD_GPIO1_IO03__GPIO1_IO03	0x8	/* SPI3_INT / X803.7 */
+			MX6UL_PAD_SNVS_TAMPER0__GPIO5_IO00	0x8	/* SPI3_RESET / X803.8 */
+			MX6UL_PAD_UART1_CTS_B__GPIO1_IO18	0x8	/* SPI3_GPIO1 / X803.10 */
+		>;
+	};
+
+	pinctrl_version: versiongrp {
+		fsl,pins = <
+			MX6UL_PAD_SNVS_TAMPER1__GPIO5_IO01	0x8	/* */
+			MX6UL_PAD_SNVS_TAMPER3__GPIO5_IO03	0x8	/* */
+			MX6UL_PAD_SNVS_TAMPER5__GPIO5_IO05	0x8	/* */
+			MX6UL_PAD_SNVS_TAMPER9__GPIO5_IO09	0x8	/* */
+		>;
+	};
+
+	/delete-node/ pinctrl_enet1;
+
+	pinctrl_enet1_igrisp: enet1grp {
+		fsl,pins = <
+			MX6UL_PAD_ENET1_RX_EN__ENET1_RX_EN	0x1b0b0
+			MX6UL_PAD_ENET1_RX_ER__ENET1_RX_ER	0x1b0b0
+			MX6UL_PAD_ENET1_RX_DATA0__ENET1_RDATA00	0x1b0b0
+			MX6UL_PAD_ENET1_RX_DATA1__ENET1_RDATA01	0x1b0b0
+			MX6UL_PAD_ENET1_TX_EN__ENET1_TX_EN	0x1b010
+			MX6UL_PAD_ENET1_TX_DATA0__ENET1_TDATA00	0x1b010
+			MX6UL_PAD_ENET1_TX_DATA1__ENET1_TDATA01	0x1b010
+			MX6UL_PAD_ENET1_TX_CLK__ENET1_REF_CLK1	0x4001b010
+			MX6UL_PAD_GPIO1_IO02__GPIO1_IO02	0x17059
+		>;
+	};
+
+	pinctrl_enet2: enet2grp {
+		fsl,pins = <
+			MX6UL_PAD_ENET2_TX_DATA0__ENET2_TDATA00	0x1b010		/* ENET2_TX_D0 */
+			MX6UL_PAD_ENET2_TX_DATA1__ENET2_TDATA01	0x1b010		/* ENET2_TX_D1 */
+			MX6UL_PAD_ENET2_TX_EN__ENET2_TX_EN	0x1b010		/* ENET2_TX_EN */
+			MX6UL_PAD_ENET2_TX_CLK__ENET2_REF_CLK2	0x4001b010	/* ENET2_TX_CLK */
+
+			MX6UL_PAD_ENET2_RX_DATA0__ENET2_RDATA00	0x1b0b0		/* ENET2_RX_D0 */
+			MX6UL_PAD_ENET2_RX_DATA1__ENET2_RDATA01	0x1b0b0		/* ENET2_RX_D1 */
+			MX6UL_PAD_ENET2_RX_EN__ENET2_RX_EN	0x1b0b0		/* ENET2_RX_EN */
+			MX6UL_PAD_ENET2_RX_ER__ENET2_RX_ER	0x1b0b0		/* ENET2_RX_ER */
+
+			MX6UL_PAD_NAND_DQS__GPIO4_IO16		0x8		/* ENET2_INT */
+
+			MX6UL_PAD_GPIO1_IO07__ENET2_MDC		0x10010
+			MX6UL_PAD_GPIO1_IO06__ENET2_MDIO	0x10010
+		>;
+	};
+
+	pinctrl_gpioleds_grisp2: gpioledsgrisp2grp {
+		fsl,pins = <
+			MX6UL_PAD_UART3_RX_DATA__GPIO1_IO25	0x00088		/* MCU_LED */
+			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x00088		/* RFId_LED */
+		>;
+	};
+};

@@ -57,6 +57,7 @@
 #define IS_GRISP2 1
 #endif
 
+#include <grisp.h>
 #ifdef IS_GRISP1
 #include <bsp/i2c.h>
 #include <grisp/pin-config.h>
@@ -69,6 +70,7 @@
 #include "sd-card-test.h"
 #include "1wire.h"
 #include "pmod_rfid.h"
+#include "pmod_dio.h"
 
 #define STACK_SIZE_INIT_TASK	(64 * 1024)
 #define STACK_SIZE_SHELL	(64 * 1024)
@@ -79,7 +81,6 @@
 #define PRIO_WPA		(RTEMS_MAXIMUM_PRIORITY - 1)
 
 #define SPI_FDT_NAME "spi0"
-#define SPI_BUS "/dev/spibus"
 
 #define CMD_SPI_MAX_LEN 32
 
@@ -249,14 +250,30 @@ Init(rtems_task_argument arg)
 	assert(rv == 0);
 #endif
 #ifdef IS_GRISP2
-	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
-	assert(rv == 0);
+	if (grisp_is_industrialgrisp()) {
+		/* Industrial GRiSP */
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE,
+				GRISP_INDUSTRIAL_SPI_ONBOARD_FDT_ALIAS);
+		assert(rv == 0);
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE "-pmod",
+				GRISP_INDUSTRIAL_SPI_PMOD_FDT_ALIAS);
+		assert(rv == 0);
 
-	rv = i2c_bus_register_imx("/dev/i2c-1", "i2c0");
-	assert(rv == 0);
+		rv = i2c_bus_register_imx(GRISP_I2C0_DEVICE,
+				GRISP_INDUSTRIAL_I2C_FDT_ALIAS);
+		assert(rv == 0);
+	} else {
+		/* GRiSP2 */
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE,
+				GRISP_SPI_FDT_ALIAS);
+		assert(rv == 0);
 
-	rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
-	assert(rv == 0);
+		rv = i2c_bus_register_imx("/dev/i2c-1", "i2c0");
+		assert(rv == 0);
+
+		rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
+		assert(rv == 0);
+	}
 #endif /* IS_GRISP2 */
 
 	printf("Init EEPROM\n");
@@ -289,8 +306,11 @@ Init(rtems_task_argument arg)
 	grisp_init_dhcpcd(PRIO_DHCP);
 
 	grisp_led_set2(false, false, true);
-	sleep(3);
-	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA, create_wlandev);
+	if (!grisp_is_industrialgrisp()) {
+		sleep(3);
+		grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA,
+		    create_wlandev);
+	}
 
 #ifdef EVENT_RECORDING
 	rtems_record_start_server(10, 1234, 10);
@@ -299,8 +319,13 @@ Init(rtems_task_argument arg)
 
 	init_led();
 #ifdef IS_GRISP2
-	// uncomment for testing RFID
-	//pmod_rfid_init(SPI_BUS, 1);
+	if (grisp_is_industrialgrisp()) {
+		pmod_rfid_init(GRISP_SPI_DEVICE, 0);
+		pmod_dio_init(GRISP_SPI_DEVICE);
+	} else {
+		// uncomment for testing RFID
+		//pmod_rfid_init(GRISP_SPI_DEVICE, 1);
+	}
 #endif /* IS_GRISP2 */
 	start_shell();
 

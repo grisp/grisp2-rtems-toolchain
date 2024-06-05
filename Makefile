@@ -99,6 +99,11 @@ bootstrap:
 .PHONY: toolchain
 #H Build and install the toolchain.
 toolchain:
+ifeq ($(UNAME),Darwin)
+	mkdir -p $(PREFIX)/bin
+	[ ! -e "$(PREFIX)/bin/python" ] && \
+		ln -s `which python3` $(PREFIX)/bin/python
+endif
 	mkdir -p $(BUILD_LOGS)
 	rm -rf $(RSB)/rtems/build
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
