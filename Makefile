@@ -96,10 +96,25 @@ submodule-update:
 toolchain:
 	mkdir -p $(BUILD_LOGS)
 	rm -rf $(RSB)/rtems/build
+	# Downloading sometimes fails on the first try. So start with
+	# downloading twice
+	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
+	    --source-only-download \
+	    --prefix=$(PREFIX) \
+	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
+	    --with-fortran \
+	    $(RTEMS_VERSION)/rtems-$(ARCH) || true
+	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
+	    --source-only-download \
+	    --prefix=$(PREFIX) \
+	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
+	    --with-fortran \
+	    $(RTEMS_VERSION)/rtems-$(ARCH)
+	# Now build the tools
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
 	    --prefix=$(PREFIX) \
 	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
-		--with-fortran \
+	    --with-fortran \
 	    $(RTEMS_VERSION)/rtems-$(ARCH)
 	rm -rf $(RSB)/rtems/build
 
