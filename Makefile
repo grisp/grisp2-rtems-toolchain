@@ -7,7 +7,7 @@ MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 ARCH = arm
 BSP = imx7
 BSP_GRISP1 = atsamv
-RTEMS_VERSION = 5
+RTEMS_VERSION = 6
 TARGET = $(ARCH)-rtems$(RTEMS_VERSION)
 PREFIX = $(MAKEFILE_DIR)/rtems/$(RTEMS_VERSION)
 RSB = $(MAKEFILE_DIR)/external/rtems-source-builder
@@ -83,7 +83,7 @@ help:
 
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
+install: submodule-update toolchain toolchain-revision bsp libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -91,20 +91,30 @@ submodule-update:
 	git submodule update --init
 	cd $(SRC_LIBBSD) && git submodule update --init rtems_waf
 
-.PHONY: bootstrap
-#H Run bootstrap for RTEMS.
-bootstrap:
-	cd $(SRC_RTEMS) && $(RSB)/source-builder/sb-bootstrap
-
 .PHONY: toolchain
 #H Build and install the toolchain.
 toolchain:
 	mkdir -p $(BUILD_LOGS)
 	rm -rf $(RSB)/rtems/build
+	# Downloading sometimes fails on the first try. So start with
+	# downloading twice
+	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
+	    --source-only-download \
+	    --prefix=$(PREFIX) \
+	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
+	    --with-fortran \
+	    $(RTEMS_VERSION)/rtems-$(ARCH) || true
+	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
+	    --source-only-download \
+	    --prefix=$(PREFIX) \
+	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
+	    --with-fortran \
+	    $(RTEMS_VERSION)/rtems-$(ARCH)
+	# Now build the tools
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
 	    --prefix=$(PREFIX) \
 	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
-		--with-fortran \
+	    --with-fortran \
 	    $(RTEMS_VERSION)/rtems-$(ARCH)
 	rm -rf $(RSB)/rtems/build
 
@@ -124,46 +134,16 @@ toolchain-revision:
 .PHONY: bsp
 #H Build the RTEMS board support package.
 bsp:
-	rm -rf $(BUILD_BSP)
-	mkdir -p $(BUILD_BSP)
-	cd $(BUILD_BSP) && $(SRC_RTEMS)/configure \
-	    --target=$(ARCH)-rtems$(RTEMS_VERSION) \
-	    --prefix=$(PREFIX) \
-	    --enable-posix \
-	    --enable-rtemsbsp=$(BSP) \
-	    --enable-maintainer-mode \
-	    --disable-networking \
-	    $(EXTRA_BSP_OPTS) \
-	    IMX_CCM_IPG_HZ=66000000 \
-	    IMX_CCM_UART_HZ=80000000 \
-	    IMX_CCM_AHB_HZ=66000000 \
-	    IMX_CCM_SDHCI_HZ=198000000 \
-	    IMX_CCM_ECSPI_HZ=60000000
-	cd $(BUILD_BSP) && make -j $(NUMCORE)
-	cd $(BUILD_BSP) && make -j $(NUMCORE) install
-
-.PHONY: bsp-grisp1
-#H Build the RTEMS board support package for GRiSP1.
-bsp-grisp1:
-	rm -rf $(BUILD_BSP_GRISP1)
-	mkdir -p $(BUILD_BSP_GRISP1)
-	cd $(BUILD_BSP_GRISP1) && $(SRC_RTEMS)/configure \
-	    --target=$(ARCH)-rtems$(RTEMS_VERSION) \
-	    --prefix=$(PREFIX) \
-	    --enable-posix \
-	    --enable-rtemsbsp=$(BSP_GRISP1) \
-	    --enable-maintainer-mode \
-	    --disable-networking \
-	    --disable-tests \
-	    $(EXTRA_BSP_OPTS) \
-	    --enable-chip=same70q21 \
-	    --enable-sdram=is42s16320f-7bl \
-	    ATSAM_CONSOLE_DEVICE_TYPE=1 \
-	    ATSAM_CONSOLE_DEVICE_INDEX=2 \
-	    ATSAM_MEMORY_QSPIFLASH_SIZE=0x0 \
-	    ATSAM_MEMORY_NOCACHE_SIZE=0x8000
-	cd $(BUILD_BSP_GRISP1) && make -j $(NUMCORE)
-	cd $(BUILD_BSP_GRISP1) && make -j $(NUMCORE) install
+	cd $(SRC_RTEMS) && ./waf clean || true
+	cp src/config.ini $(SRC_RTEMS)
+	if [ "$(DEBUG)" == "1" ]; then cd $(SRC_RTEMS) && sed -i \
+		-e "s|OPTIMIZATION_FLAGS = -O2|OPTIMIZATION_FLAGS = -O0|g" \
+		-e "s|RTEMS_DEBUG = False|RTEMS_DEBUG = True|g" \
+		config.ini; \
+		fi
+	cd $(SRC_RTEMS) && ./waf configure --prefix=$(PREFIX)
+	cd $(SRC_RTEMS) && ./waf
+	cd $(SRC_RTEMS) && ./waf install
 
 .PHONY: bsp.mk
 #H Build a Makefile helper for the applications.

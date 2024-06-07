@@ -30,6 +30,7 @@
  */
 
 #undef EVENT_RECORDING
+#define RTC_ENABLED
 
 #include <assert.h>
 #include <stdlib.h>
@@ -45,6 +46,10 @@
 #include <rtems/stringto.h>
 #include <rtems/ftpd.h>
 #include <machine/rtems-bsd-commands.h>
+#ifdef RTC_ENABLED
+#include <libchip/rtc.h>
+#include <libchip/mcp7940m-rtc.h>
+#endif
 #ifdef EVENT_RECORDING
 #include <rtems/record.h>
 #include <rtems/recordserver.h>
@@ -57,6 +62,7 @@
 #define IS_GRISP2 1
 #endif
 
+#include <grisp.h>
 #ifdef IS_GRISP1
 #include <bsp/i2c.h>
 #include <grisp/pin-config.h>
@@ -69,6 +75,7 @@
 #include "sd-card-test.h"
 #include "1wire.h"
 #include "pmod_rfid.h"
+#include "pmod_dio.h"
 
 #define STACK_SIZE_INIT_TASK	(64 * 1024)
 #define STACK_SIZE_SHELL	(64 * 1024)
@@ -79,7 +86,6 @@
 #define PRIO_WPA		(RTEMS_MAXIMUM_PRIORITY - 1)
 
 #define SPI_FDT_NAME "spi0"
-#define SPI_BUS "/dev/spibus"
 
 #define CMD_SPI_MAX_LEN 32
 
@@ -249,15 +255,35 @@ Init(rtems_task_argument arg)
 	assert(rv == 0);
 #endif
 #ifdef IS_GRISP2
-	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
-	assert(rv == 0);
+	if (grisp_is_industrialgrisp()) {
+		/* Industrial GRiSP */
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE,
+				GRISP_INDUSTRIAL_SPI_ONBOARD_FDT_ALIAS);
+		assert(rv == 0);
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE "-pmod",
+				GRISP_INDUSTRIAL_SPI_PMOD_FDT_ALIAS);
+		assert(rv == 0);
 
-	rv = i2c_bus_register_imx("/dev/i2c-1", "i2c0");
-	assert(rv == 0);
+		rv = i2c_bus_register_imx(GRISP_I2C0_DEVICE,
+				GRISP_INDUSTRIAL_I2C_FDT_ALIAS);
+		assert(rv == 0);
+	} else {
+		/* GRiSP2 */
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE,
+				GRISP_SPI_FDT_ALIAS);
+		assert(rv == 0);
 
-	rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
-	assert(rv == 0);
+		rv = i2c_bus_register_imx("/dev/i2c-1", "i2c0");
+		assert(rv == 0);
+
+		rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
+		assert(rv == 0);
+	}
 #endif /* IS_GRISP2 */
+
+#ifdef RTC_ENABLED
+	setRealTimeToRTEMS();
+#endif
 
 	printf("Init EEPROM\n");
 	grisp_eeprom_init();
@@ -289,8 +315,11 @@ Init(rtems_task_argument arg)
 	grisp_init_dhcpcd(PRIO_DHCP);
 
 	grisp_led_set2(false, false, true);
-	sleep(3);
-	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA, create_wlandev);
+	if (!grisp_is_industrialgrisp()) {
+		sleep(3);
+		grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA,
+		    create_wlandev);
+	}
 
 #ifdef EVENT_RECORDING
 	rtems_record_start_server(10, 1234, 10);
@@ -299,13 +328,29 @@ Init(rtems_task_argument arg)
 
 	init_led();
 #ifdef IS_GRISP2
-	// uncomment for testing RFID
-	//pmod_rfid_init(SPI_BUS, 1);
+	if (grisp_is_industrialgrisp()) {
+		pmod_rfid_init(GRISP_SPI_DEVICE, 0);
+		pmod_dio_init(GRISP_SPI_DEVICE);
+	} else {
+		// uncomment for testing RFID
+		//pmod_rfid_init(GRISP_SPI_DEVICE, 1);
+	}
 #endif /* IS_GRISP2 */
 	start_shell();
 
 	exit(0);
 }
+
+#ifdef RTC_ENABLED
+static struct mcp7940m_rtc rtc_ctx =
+	MCP7940M_RTC_INITIALIZER("/dev/i2c-1", 0x6f, false);
+
+rtc_tbl RTC_Table[] = {
+	MCP7940M_RTC_TBL_ENTRY("/dev/rtc", &rtc_ctx),
+};
+
+size_t RTC_Count = (sizeof(RTC_Table)/sizeof(rtc_tbl));
+#endif
 
 /*
  * Configure LibBSD.
@@ -321,6 +366,9 @@ Init(rtems_task_argument arg)
  */
 #define CONFIGURE_MICROSECONDS_PER_TICK 10000
 
+#ifdef RTC_ENABLED
+#define CONFIGURE_APPLICATION_NEEDS_RTC_DRIVER
+#endif
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_STUB_DRIVER
