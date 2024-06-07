@@ -48,6 +48,13 @@ jobs:
       - name: Build toolchain
         shell: bash
         run: |
+          # Hack: Downloading gmp often fails on github. Seems that the server
+          # is rate limited or something like that. So pre-fetch the file from a
+          # mirror.
+          make submodule-update
+          mkdir external/rtems-source-builder/rtems/sources
+          wget -O external/rtems-source-builder/rtems/sources/gmp-6.3.0.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.bz2
+          # Hack end
           make install
           if [ "$RUNNER_OS" == "Linux" ]; then
             make barebox
