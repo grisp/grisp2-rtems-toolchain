@@ -30,6 +30,7 @@
  */
 
 #undef EVENT_RECORDING
+#define RTC_ENABLED
 
 #include <assert.h>
 #include <stdlib.h>
@@ -45,6 +46,10 @@
 #include <rtems/stringto.h>
 #include <rtems/ftpd.h>
 #include <machine/rtems-bsd-commands.h>
+#ifdef RTC_ENABLED
+#include <libchip/rtc.h>
+#include <libchip/mcp7940m-rtc.h>
+#endif
 #ifdef EVENT_RECORDING
 #include <rtems/record.h>
 #include <rtems/recordserver.h>
@@ -259,6 +264,10 @@ Init(rtems_task_argument arg)
 	assert(rv == 0);
 #endif /* IS_GRISP2 */
 
+#ifdef RTC_ENABLED
+	setRealTimeToRTEMS();
+#endif
+
 	printf("Init EEPROM\n");
 	grisp_eeprom_init();
 	rv = grisp_eeprom_get(&eeprom);
@@ -307,6 +316,17 @@ Init(rtems_task_argument arg)
 	exit(0);
 }
 
+#ifdef RTC_ENABLED
+static struct mcp7940m_rtc rtc_ctx =
+	MCP7940M_RTC_INITIALIZER("/dev/i2c-1", 0x6f, false);
+
+rtc_tbl RTC_Table[] = {
+	MCP7940M_RTC_TBL_ENTRY("/dev/rtc", &rtc_ctx),
+};
+
+size_t RTC_Count = (sizeof(RTC_Table)/sizeof(rtc_tbl));
+#endif
+
 /*
  * Configure LibBSD.
  */
@@ -321,6 +341,9 @@ Init(rtems_task_argument arg)
  */
 #define CONFIGURE_MICROSECONDS_PER_TICK 10000
 
+#ifdef RTC_ENABLED
+#define CONFIGURE_APPLICATION_NEEDS_RTC_DRIVER
+#endif
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_STUB_DRIVER
