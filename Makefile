@@ -5,7 +5,8 @@
 MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ARCH = arm
-BSP = imx7
+BSP_GRISP_NANO = stm32u5-grisp-nano
+BSP_GRISP2 = imx7
 BSP_GRISP1 = atsamv
 RTEMS_VERSION = 6
 TARGET = $(ARCH)-rtems$(RTEMS_VERSION)
@@ -20,8 +21,6 @@ SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 SRC_CRYPTOAUTHLIB = $(MAKEFILE_DIR)/external/cryptoauthlib
 SRC_BLAS = $(MAKEFILE_DIR)/external/lapack
-BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
-BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
 BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
@@ -124,10 +123,10 @@ toolchain-revision:
 	mkdir -p ${PREFIX}
 	echo "${GRISP_TOOLCHAIN_REVISION}" > "${PREFIX}/GRISP_TOOLCHAIN_REVISION"
 	echo "${GRISP_TOOLCHAIN_PLATFORM}" > "${PREFIX}/GRISP_TOOLCHAIN_PLATFORM"
-	mkdir -p ${PREFIX}/${TARGET}/${BSP}/lib/include/grisp
-	echo "" > "${PREFIX}/${TARGET}/${BSP}/lib/include/grisp/grisp-buildinfo.h"
+	mkdir -p ${PREFIX}/${TARGET}/${BSP_GRISP2}/lib/include/grisp
+	echo "" > "${PREFIX}/${TARGET}/${BSP_GRISP2}/lib/include/grisp/grisp-buildinfo.h"
 	echo "$$GRISP_BUILDINFO_C" > \
-		"${PREFIX}/${TARGET}/${BSP}/lib/include/grisp/grisp-buildinfo.h"
+		"${PREFIX}/${TARGET}/${BSP_GRISP2}/lib/include/grisp/grisp-buildinfo.h"
 	echo "$$GRISP_BUILDINFO_ERL" > \
 		"${PREFIX}/grisp_buildinfo.hrl"
 
@@ -147,17 +146,23 @@ bsp:
 
 .PHONY: bsp.mk
 #H Build a Makefile helper for the applications.
-bsp.mk: $(PREFIX)/make/custom/$(BSP).mk $(PREFIX)/make/custom/$(BSP_GRISP1).mk
-$(PREFIX)/make/custom/$(BSP).mk: src/bsp.mk
+bsp.mk: $(PREFIX)/make/custom/$(BSP_GRISP2).mk $(PREFIX)/make/custom/$(BSP_GRISP1).mk $(PREFIX)/make/custom/$(BSP_GRISP_NANO).mk
+$(PREFIX)/make/custom/$(BSP_GRISP2).mk: src/bsp.mk
 	cat $^ | sed \
 	    -e "s/##RTEMS_API##/$(RTEMS_VERSION)/g" \
-	    -e "s/##RTEMS_BSP##/$(BSP)/g" \
+	    -e "s/##RTEMS_BSP##/$(BSP_GRISP2)/g" \
 	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
 	    > $@
 $(PREFIX)/make/custom/$(BSP_GRISP1).mk: src/bsp.mk
 	cat $^ | sed \
 	    -e "s/##RTEMS_API##/$(RTEMS_VERSION)/g" \
 	    -e "s/##RTEMS_BSP##/$(BSP_GRISP1)/g" \
+	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
+	    > $@
+$(PREFIX)/make/custom/$(BSP_GRISP_NANO).mk: src/bsp.mk
+	cat $^ | sed \
+	    -e "s/##RTEMS_API##/$(RTEMS_VERSION)/g" \
+	    -e "s/##RTEMS_BSP##/$(BSP_GRISP_NANO)/g" \
 	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
 	    > $@
 
@@ -167,37 +172,47 @@ libbsd:
 	rm -rf $(SRC_LIBBSD)/build
 	cd $(SRC_LIBBSD) && ./waf configure \
 	    --prefix=$(PREFIX) \
-	    --rtems-bsps=$(ARCH)/$(BSP),$(ARCH)/$(BSP_GRISP1) \
+	    --rtems-bsps=$(ARCH)/$(BSP_GRISP2),$(ARCH)/$(BSP_GRISP1),$(ARCH)/$(BSP_GRISP_NANO) \
 	    --enable-warnings \
 	    --optimization=$(OPTIMIZATION) \
 	    --buildset=$(LIBBSD_BUILDSET) \
 	    --rtems-version=$(RTEMS_VERSION)
-	# Workaround for GRiSP1
+	# Workaround for GRiSP1 and Nano
 	[ ! -e "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.org" ] && \
 		mv "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds" \
 		    "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.org" || \
 		true
-	cp "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.sdram" \
-	    "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds"
-	# End of workaround for GRiSP1
+	echo "INCLUDE linkcmds.sdram" > \
+		"$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds"
+	[ ! -e "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds.org" ] && \
+		mv "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds" \
+		    "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds.org" || \
+		true
+	echo "INCLUDE linkcmds.ospi" > \
+		"$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds"
+	# End of workaround for GRiSP1 and Nano
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
-	# Workaround for GRiSP1
+	# Workarounds for GRiSP1 and Nano
 	cp "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.org" \
 	    "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds"
-	# End of workaround for GRiSP1
+	cp "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds.org" \
+	    "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds"
+	# End of workarounds for GRiSP1 and Nano
 
 .PHONY: libgrisp
 #H Build and install libgrisp.
 libgrisp:
-	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBGRISP) install
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP2) -C $(SRC_LIBGRISP) install
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP1) -C $(SRC_LIBGRISP) install
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP_NANO) -C $(SRC_LIBGRISP) install
 
 .PHONY: libinih
 #H Build and install libinih
 libinih:
-	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP) -C $(SRC_LIBINIH) clean install
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP2) -C $(SRC_LIBINIH) clean install
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP1) -C $(SRC_LIBINIH) clean install
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP_NANO) -C $(SRC_LIBINIH) clean install
 
 .PHONY: fdt
 #H Build the flattened device tree.
@@ -289,7 +304,7 @@ imx_uart:
 cmake_toolchain_config:
 	cat $(CMAKE_TOOLCHAIN_TEMPLATE) | sed \
 	    -e "s|##PREFIX##|$(PREFIX)|g" \
-	    -e "s|##BSP##|$(BSP)|g" \
+	    -e "s|##BSP##|$(BSP_GRISP2)|g" \
 	    -e "s|##TARGET##|$(TARGET)|g" \
 	    > $(CMAKE_TOOLCHAIN_CONFIG)
 
@@ -322,11 +337,11 @@ cryptoauthlib: cmake_toolchain_config
 	cd $(SRC_CRYPTOAUTHLIB)/build && \
 		make DESTDIR=$(SRC_CRYPTOAUTHLIB)/install install && \
 		cp -r $(SRC_CRYPTOAUTHLIB)/install/usr/lib/libcryptoauth.a \
-			$(PREFIX)/$(TARGET)/$(BSP)/lib/ && \
+			$(PREFIX)/$(TARGET)/$(BSP_GRISP2)/lib/ && \
 		cp -r $(SRC_CRYPTOAUTHLIB)/install/usr/include/cryptoauthlib \
-			$(PREFIX)/$(TARGET)/$(BSP)/lib/include/ && \
-		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_config.h && \
-		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_iface.h
+			$(PREFIX)/$(TARGET)/$(BSP_GRISP2)/lib/include/ && \
+		touch $(PREFIX)/$(TARGET)/$(BSP_GRISP2)/lib/include/cryptoauthlib/atca_start_config.h && \
+		touch $(PREFIX)/$(TARGET)/$(BSP_GRISP2)/lib/include/cryptoauthlib/atca_start_iface.h
 
 
 BLAS_TOOLS=\
@@ -358,22 +373,24 @@ blas:
 		$(AR) -qc libblas.a *.o &&\
 		rm *.o &&\
 		$(RANLIB) libblas.a
-	cp $(SRC_BLAS)/libblas.a $(PREFIX)/$(TARGET)/$(BSP)/lib/libblas.a
-	cp $(SRC_BLAS)/CBLAS/include/cblas.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cblas.h
-	cp $(SRC_BLAS)/CBLAS/include/cblas_mangling.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cblas_mangling.h
-	cp $(SRC_BLAS)/LAPACKE/include/*.h $(PREFIX)/$(TARGET)/$(BSP)/lib/include/
+	cp $(SRC_BLAS)/libblas.a $(PREFIX)/$(TARGET)/$(BSP_GRISP2)/lib/libblas.a
+	cp $(SRC_BLAS)/CBLAS/include/cblas.h $(PREFIX)/$(TARGET)/$(BSP_GRISP2)/lib/include/cblas.h
+	cp $(SRC_BLAS)/CBLAS/include/cblas_mangling.h $(PREFIX)/$(TARGET)/$(BSP_GRISP2)/lib/include/cblas_mangling.h
+	cp $(SRC_BLAS)/LAPACKE/include/*.h $(PREFIX)/$(TARGET)/$(BSP_GRISP2)/lib/include/
 
 .PHONY: demo
 #H Build the demo application.
 demo:
 	make -C demo
 	RTEMS_BSP=$(BSP_GRISP1) make -C demo
+	RTEMS_BSP=$(BSP_GRISP_NANO) make -C demo
 
 .PHONY: demo-clean
 #H Clean the demo application.
 demo-clean:
 	make -C demo clean
 	RTEMS_BSP=$(BSP_GRISP1) make -C demo clean
+	RTEMS_BSP=$(BSP_GRISP_NANO) make -C demo clean
 
 .PHONY: shell
 #H Start a shell with the environment for building for example the RTEMS BSP.
