@@ -58,8 +58,10 @@
 #include <bsp.h>
 #ifdef LIBBSP_ARM_ATSAM_BSP_H
 #define IS_GRISP1 1
-#elif defined LIBBPS_ARM_IMX_BSP_H
+#elif defined LIBBSP_ARM_IMX_BSP_H
 #define IS_GRISP2 1
+#elif defined LIBBSP_ARM_STM32U5_BSP_H
+#define IS_GRISP_NANO
 #endif
 
 #include <grisp.h>
@@ -411,10 +413,22 @@ size_t RTC_Count = (sizeof(RTC_Table)/sizeof(rtc_tbl));
 /*
  * Configure Shell.
  */
+#ifndef IS_GRISP_NANO
 #include <rtems/netcmds-config.h>
+#endif
 #include <bsp/irq-info.h>
 #define CONFIGURE_SHELL_COMMANDS_INIT
 
+#ifdef IS_GRISP_NANO
+#define CONFIGURE_SHELL_USER_COMMANDS \
+  &bsp_interrupt_shell_command, \
+  &rtems_shell_STARTFTP_Command, \
+  &rtems_shell_BLKSTATS_Command, \
+  &shell_PATTERN_FILL_Command, \
+  &shell_PATTERN_CHECK_Command, \
+  &shell_1wiretemp_command, \
+  &shell_FRAGMENTED_READ_TEST_Command
+#else
 #define CONFIGURE_SHELL_USER_COMMANDS \
   &bsp_interrupt_shell_command, \
   &rtems_shell_ARP_Command, \
@@ -436,6 +450,7 @@ size_t RTC_Count = (sizeof(RTC_Table)/sizeof(rtc_tbl));
   &shell_PATTERN_CHECK_Command, \
   &shell_1wiretemp_command, \
   &shell_FRAGMENTED_READ_TEST_Command
+#endif
 
 #define CONFIGURE_SHELL_COMMANDS_ALL
 
