@@ -58,7 +58,7 @@
 #include <bsp.h>
 #ifdef LIBBSP_ARM_ATSAM_BSP_H
 #define IS_GRISP1 1
-#else
+#elif defined LIBBPS_ARM_IMX_BSP_H
 #define IS_GRISP2 1
 #endif
 
@@ -74,8 +74,10 @@
 #include "fragmented-read-test.h"
 #include "sd-card-test.h"
 #include "1wire.h"
+#ifdef IS_GRISP2
 #include "pmod_rfid.h"
 #include "pmod_dio.h"
+#endif
 
 #define STACK_SIZE_INIT_TASK	(64 * 1024)
 #define STACK_SIZE_SHELL	(64 * 1024)
@@ -285,6 +287,7 @@ Init(rtems_task_argument arg)
 	setRealTimeToRTEMS();
 #endif
 
+#ifndef GRISP_PLATFORM_GRISP_NANO
 	printf("Init EEPROM\n");
 	grisp_eeprom_init();
 	rv = grisp_eeprom_get(&eeprom);
@@ -297,8 +300,9 @@ Init(rtems_task_argument arg)
 		printf("ERROR: Invalid EEPROM\n");
 	}
 #endif
+#endif
 
-	grisp_init_sd_card();
+	grisp_init_sd_card("/media/mmcsd-1-0/");
 	grisp_init_lower_self_prio();
 	grisp_init_libbsd();
 

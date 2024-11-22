@@ -28,7 +28,7 @@
 #include <bsp.h>
 #ifdef LIBBSP_ARM_ATSAM_BSP_H
 #define IS_GRISP1 1
-#else
+#elif defined LIBBSP_ARM_IMX_BSP_H
 #define IS_GRISP2 1
 #endif
 
