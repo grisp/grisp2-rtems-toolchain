@@ -365,7 +365,7 @@ AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar'
 .PHONY: blas
 #H Build the BLAS-LAPACKE library.
 blas:
-	cp external/BLAS/make.inc $(SRC_BLAS) 
+	cp external/BLAS/make.inc $(SRC_BLAS)
 	cd $(SRC_BLAS) && make blaslib $(BLAS_TOOLS)
 	cd $(SRC_BLAS) && make cblaslib $(BLAS_TOOLS)
 	cd $(SRC_BLAS) && make lapacklib $(BLAS_TOOLS)
@@ -404,3 +404,17 @@ shell:
 package:
 	mkdir -p "${PACKAGE_DIR}"
 	cd "${PREFIX}" &&  tar -czf "../../${PACKAGE_DIR}/${PACKAGE_PREFIX}_${OS_NAME}_${OS_VERSION}_${GRISP_TOOLCHAIN_REVISION}.tar.gz" *
+
+.PHONY: docker-build
+#H Build the toolchain with tag 'local'
+docker-build:
+	docker build -t grisp/grisp2-rtems-toolchain:local .
+
+.PHONY: docker-build-push
+#H Build the toolchain with the given tag and push it, for example 'make docker-build-push TAG=latest'
+docker-build-push:
+	@if [ -z "$(TAG)" ]; then \
+		echo "Error: TAG is not set. Usage: make docker-build-push TAG=<tag>"; \
+		exit 1; \
+	fi
+	docker build -t grisp/grisp2-rtems-toolchain:$(TAG) --push .
