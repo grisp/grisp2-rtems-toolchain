@@ -1,4 +1,6 @@
-FROM debian:bookworm as build-stage
+# Check the docker targets in ./Makefile to see how to use this.
+
+FROM debian:bookworm AS build-stage
 
 RUN apt-get update && apt-get install -y \
     build-essential flex bison cmake texinfo device-tree-compiler git \
@@ -16,7 +18,7 @@ RUN make install
 
 # ------------------------------------------------------------------------------
 
-FROM debian:bookworm-slim as run-stage
+FROM debian:bookworm-slim AS run-stage
 
 RUN apt-get update && apt-get install -y \
     build-essential flex bison cmake texinfo device-tree-compiler git \
