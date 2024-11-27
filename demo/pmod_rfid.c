@@ -25,17 +25,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <grisp.h>
 #include <bsp.h>
-#ifdef LIBBSP_ARM_ATSAM_BSP_H
-#define IS_GRISP1 1
-#else
-#define IS_GRISP2 1
-#endif
 
 #include <rtems.h>
 #include <rtems/shell.h>
 
-#ifdef IS_GRISP2
+#ifdef GRISP_PLATFORM_GRISP2
 #include <bsp/fdt.h>
 #include <bsp/imx-gpio.h>
 
