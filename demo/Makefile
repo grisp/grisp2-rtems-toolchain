@@ -8,6 +8,9 @@ CFLAGS += -O0
 ifeq ($(RTEMS_BSP),atsamv)
 LDFLAGS += -qnolinkcmds -T linkcmds.sdram
 endif
+ifeq ($(RTEMS_BSP),stm32u5-grisp-nano)
+LDFLAGS += -qnolinkcmds -T linkcmds.ospi
+endif
 
 APP = $(BUILDDIR)/demo
 APP_PIECES = $(wildcard *.c)
