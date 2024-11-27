@@ -1,0 +1,18 @@
+// T32 Wed Nov 27 12:36:08 2024
+
+B::
+
+Break.RESet
+Break.CONFIG.VarConvert OFF
+Break.CONFIG.InexactData ON
+Break.CONFIG.InexactTrigger OFF
+Break.CONFIG.InexactResume ON
+Break.CONFIG.InexactAddress ON
+Break.CONFIG.MatchZone OFF
+Break.CONFIG.AlwaysAlive OFF
+Break.Set     bsp_reset /Program
+Break.Set     rtems_bdbuf_read+0xF6 /Program
+Break.Set     rtems_bdbuf_peek+0x64 /Program
+Break.Set     _Terminate /Program
+
+ENDDO
