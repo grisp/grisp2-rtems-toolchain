@@ -14,13 +14,16 @@ APP_PIECES = $(wildcard *.c)
 APP_OBJS = $(APP_PIECES:%.c=$(BUILDDIR)/%.o)
 APP_DEPS = $(APP_PIECES:%.c=$(BUILDDIR)/%.d)
 
-all: $(BUILDDIR) $(APP).exe
+all: $(BUILDDIR) $(APP).exe $(APP).bin
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
 
 $(APP).exe: $(APP_OBJS)
 	$(CCLINK) $^ -lgrisp -linih -lbsd -lm -o $@
+
+$(APP).bin: $(APP).exe
+	$(OBJCOPY) -O binary $< $@
 
 clean:
 	rm -rf $(BUILDDIR)
