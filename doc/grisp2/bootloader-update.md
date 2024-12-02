@@ -2,15 +2,15 @@
 
 Use the following instructions to update the Barebox boot loader for GRiSP 2 to the latest version.
 
-1. Copy barebox/barebox-phytec-phycore-imx6ul-emmc-512mb.img from this repository to a FAT32 formatted SD card (assuming the path `/Volumes/GRISP` to the SD card):
+1. Copy `barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img` from this repository to a FAT32 formatted SD card (assuming the path `/Volumes/GRISP` to the SD card):
 
    ```sh
    $ cd grisp2-rtems-toolchain
-   $ cp barebox/barebox-phytec-phycore-imx6ul-emmc-512mb.img /Volumes/GRISP/
+   $ cp barebox/barebox-phytec-phycore-imx6ull-emmc-512mb.img /Volumes/GRISP/
    $ diskutil unmount /Volumes/GRISP # macOS
    ```
 
-2. Boot the board and abort the standard boot sequence by pressing enter at the prompt:
+2. Connect to the Erlang node running on your board ([over a Serial](https://github.com/grisp/grisp/wiki/Connecting-over-Serial) or [remotely via Ethernet](https://github.com/grisp/grisp/wiki/Connecting-over-Serial)), press the RESET button and abort the standard boot sequence by pressing `<Enter>` at the prompt:
 
    ```
    barebox 2019.01.0-bsp-yocto-i.mx6ul-pd19.1.1 #5 Thu Aug 26 14:45:01 CEST 2021
@@ -47,7 +47,7 @@ Use the following instructions to update the Barebox boot loader for GRiSP 2 to 
    mmc0: registered mmc0
    .
    ..
-   barebox-phytec-phycore-imx6ul-emmc-512mb.img
+   barebox-phytec-phycore-imx6ull-emmc-512mb.img
    grisp.ini
    loader
    myrelease
@@ -56,9 +56,9 @@ Use the following instructions to update the Barebox boot loader for GRiSP 2 to 
 4. Boot from that boot loader to verify that it works:
 
    ```
-   ...:/ bootm /mnt/mmc/barebox-phytec-phycore-imx6ul-emmc-512mb.img 
+   ...:/ bootm /mnt/mmc/barebox-phytec-phycore-imx6ull-emmc-512mb.img 
    
-   Loading ARM barebox image '/mnt/mmc/barebox-phytec-phycore-imx6ul-emmc-512mb.img'
+   Loading ARM barebox image '/mnt/mmc/barebox-phytec-phycore-imx6ull-emmc-512mb.img'
    commandline: consoleblank=0 console=ttymxc0,115200n8   rootwait ro fsck.repair=yes
    Starting kernel in secure mode
    
@@ -71,15 +71,15 @@ Use the following instructions to update the Barebox boot loader for GRiSP 2 to 
 5. Reset the board (into the old bootloader, or load the new bootloader again) and flash the new boot loader (press <kbd>y</kbd> when prompted):
 
    ```
-   ...:/ barebox_update /mnt/mmc/barebox-phytec-phycore-imx6ul-emmc-512mb.img 
-   barebox_update /mnt/mmc/barebox-phytec-phycore-imx6ul-emmc-512mb.img
+   ...:/ barebox_update /mnt/mmc/barebox-phytec-phycore-imx6ull-emmc-512mb.img 
+   barebox_update /mnt/mmc/barebox-phytec-phycore-imx6ull-emmc-512mb.img
    mmc0: detected SD card version 2.0
    mmc0: registered mmc0
    Image Metadata:
      build: #5 Thu Aug 26 14:45:01 CEST 2021
      release: 2019.01.0-bsp-yocto-i.mx6ul-pd19.1.1
      parameter: memsize=512
-   update barebox from /mnt/mmc/barebox-phytec-phycore-imx6ul-emmc-512mb.img using handler mmc1 to /dev/mmc1 (y/n)? y 
+   update barebox from /mnt/mmc/barebox-phytec-phycore-imx6ull-emmc-512mb.img using handler mmc1 to /dev/mmc1 (y/n)? y 
    updating barebox...
    update succeeded
    ...:/
