@@ -376,7 +376,7 @@ Init(rtems_task_argument arg)
  */
 #include <grisp/libbsd-nexus-config.h>
 #define RTEMS_BSD_CONFIG_INIT
-#define RTEMS_BSD_CONFIG_DOMAIN_PAGE_MBUFS_SIZE (3 * 1024 * 1024)
+#define RTEMS_BSD_CONFIG_DOMAIN_PAGE_MBUFS_SIZE (4 * 1024 * 1024)
 
 #include <machine/rtems-bsd-config.h>
 

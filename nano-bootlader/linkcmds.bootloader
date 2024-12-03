@@ -1,7 +1,7 @@
 INCLUDE linkcmds.memory
 MEMORY {
-  APP   : ORIGIN = 0x90000000, LENGTH = 0x01000000 - 4M
-  BL    : ORIGIN = 0x91000000 - 4M, LENGTH = 4M
+  APP   : ORIGIN = 0x90000000, LENGTH = 0x01000000 - 5M
+  BL    : ORIGIN = 0x91000000 - 5M, LENGTH = 5M
 }
 
 stm32u5_memory_app_begin = ORIGIN (APP);
