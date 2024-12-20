@@ -24,6 +24,7 @@ SRC_BLAS = $(MAKEFILE_DIR)/external/lapack
 BUILD_LOGS = $(MAKEFILE_DIR)/build
 BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
+LIBBSD_NANO_BUILDSET = $(MAKEFILE_DIR)/src/libbsd-nano.ini
 CMAKE_TOOLCHAIN_TEMPLATE = $(MAKEFILE_DIR)/cryptoauthlib/grisp2-toolchain.cmake.in
 CMAKE_TOOLCHAIN_CONFIG = $(PREFIX)/share/grisp2-toolchain.cmake
 PACKAGE_DIR = package
@@ -170,13 +171,6 @@ $(PREFIX)/make/custom/$(BSP_GRISP_NANO).mk: src/bsp.mk
 #H Build and install libbsd.
 libbsd:
 	rm -rf $(SRC_LIBBSD)/build
-	cd $(SRC_LIBBSD) && ./waf configure \
-	    --prefix=$(PREFIX) \
-	    --rtems-bsps=$(ARCH)/$(BSP_GRISP2),$(ARCH)/$(BSP_GRISP1),$(ARCH)/$(BSP_GRISP_NANO) \
-	    --enable-warnings \
-	    --optimization=$(OPTIMIZATION) \
-	    --buildset=$(LIBBSD_BUILDSET) \
-	    --rtems-version=$(RTEMS_VERSION)
 	# Workaround for GRiSP1 and Nano
 	[ ! -e "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds.org" ] && \
 		mv "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds" \
@@ -191,6 +185,22 @@ libbsd:
 	echo "INCLUDE linkcmds.ospi" > \
 		"$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds"
 	# End of workaround for GRiSP1 and Nano
+	cd $(SRC_LIBBSD) && ./waf configure \
+	    --prefix=$(PREFIX) \
+	    --rtems-bsps=$(ARCH)/$(BSP_GRISP2),$(ARCH)/$(BSP_GRISP1) \
+	    --enable-warnings \
+	    --optimization=$(OPTIMIZATION) \
+	    --buildset=$(LIBBSD_BUILDSET) \
+	    --rtems-version=$(RTEMS_VERSION)
+	cd $(SRC_LIBBSD) && ./waf
+	cd $(SRC_LIBBSD) && ./waf install
+	cd $(SRC_LIBBSD) && ./waf configure \
+	    --prefix=$(PREFIX) \
+	    --rtems-bsps=$(ARCH)/$(BSP_GRISP_NANO) \
+	    --enable-warnings \
+	    --optimization=$(OPTIMIZATION) \
+	    --buildset=$(LIBBSD_NANO_BUILDSET) \
+	    --rtems-version=$(RTEMS_VERSION)
 	cd $(SRC_LIBBSD) && ./waf
 	cd $(SRC_LIBBSD) && ./waf install
 	# Workarounds for GRiSP1 and Nano
