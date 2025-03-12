@@ -123,6 +123,13 @@ GRiSP2 might can't boot any more and you have to use the [recovery sequence][7].
 1. Interrupt the boot loader when it outputs the `Hit m for menu or any key to
    stop autoboot:` line. You should drop into a shell with a
    `barebox@PHYTEC phyCORE-i.MX6 ULL SOM with eMMC:/` prompt.
+1. Force the board to boot the first system partition:
+    ```
+    setenv state.bootstate.active_system 0
+    setenv state.bootstate.update_system 0
+    setenv state.bootstate.update_boot_count 0
+    state -s
+    ```
 1. Type `mmc1.probe=1` to start the eMMC detection.
 1. Type `mmc0.probe=1` to start the SD detection.
 1. You can now do a ls on your SD card: `ls /mnt/mmc0.0`
