@@ -75,7 +75,7 @@ jobs:
       - name: Create package
         run: make package
       - name: Upload package artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: package-${{ runner.os }}
           path: |
