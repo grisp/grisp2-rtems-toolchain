@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -12,11 +13,11 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-22.04
           - macOS-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name:  Install dependencies
         shell: bash
         run:   |
@@ -75,7 +76,7 @@ jobs:
       - name: Create package
         run: make package
       - name: Upload package artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: package-${{ runner.os }}
           path: |
@@ -94,7 +95,7 @@ jobs:
     steps:
 
       - name: Download a single artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: package-${{ runner.os }}
           path: package
