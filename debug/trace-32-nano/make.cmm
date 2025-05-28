@@ -1,0 +1,66 @@
+global &initialized
+
+; Target can be one of RAM, Flash
+;&mem_target="RAM"
+&mem_target="RAM_nocode"
+;&mem_target="Flash"
+;&mem_target="Flash_Erase"
+
+;&app="~~~~/../../nano-bootlader/b-stm32u5-grisp-nano/nano-bootloader.exe"
+&app="~~~~/../../demo/b-stm32u5-grisp-nano/demo.exe"
+
+if "&initialized"==""
+(
+	&initialized="1"
+	RESet
+	SYStem.CPU STM32U5G7VJ
+	SYStem.CONFIG.DEBUGPORTTYPE SWD
+	IF COMBIPROBE()||UTRACE()
+	(
+	  ; depending on the board
+	  SYStem.CONFIG.CONNECTOR MIPI20T
+	)
+	SYStem.Option DUALPORT ON
+	SYStem.Up
+
+	do win
+)
+
+SYStem.Up
+
+if "&mem_target"=="RAM"
+(
+	Data.LOAD.Elf "&app"
+)
+if "&mem_target"=="RAM_nocode"
+(
+	Data.LOAD.Elf "&app" /nocode
+	break.set _start
+	break.set _Terminate
+	break.set bsp_reset
+	enddo
+)
+if "&mem_target"=="Flash"
+(
+	DO ~~/demo/arm/flash/stm32u5 PREPAREONLY
+	FLASH.ReProgram ALL
+	Data.LOAD.Elf "&app"
+	FLASH.ReProgram OFF
+)
+if "&mem_target"=="Flash_Erase"
+(
+	DO ~~/demo/arm/flash/stm32u5 PREPAREONLY
+	FLASH.Erase ALL
+)
+
+; Disable interrupts
+PER.Set.simple ASD:0xE000E180 %Long 0xFFFFFFFF
+PER.Set.simple ASD:0xE000E184 %Long 0xFFFFFFFF
+PER.Set.simple ASD:0xE000E188 %Long 0xFFFFFFFF
+PER.Set.simple ASD:0xE000E18C %Long 0xFFFFFFFF
+PER.Set.simple ASD:0xE000E190 %Long 0xFFFFFFFF
+
+break.set _Terminate
+break.set bsp_reset
+
+enddo

@@ -30,6 +30,9 @@
  */
 
 #undef EVENT_RECORDING
+#define RTC_ENABLED
+
+#include <grisp.h>
 
 #include <assert.h>
 #include <stdlib.h>
@@ -44,23 +47,24 @@
 #include <rtems/shell.h>
 #include <rtems/stringto.h>
 #include <rtems/ftpd.h>
+#include <rtems/tod.h>
 #include <machine/rtems-bsd-commands.h>
+#ifdef RTC_ENABLED
+#include <libchip/rtc.h>
+#include <libchip/mcp7940m-rtc.h>
+#endif
 #ifdef EVENT_RECORDING
 #include <rtems/record.h>
 #include <rtems/recordserver.h>
 #endif /* EVENT_RECORDING */
 
 #include <bsp.h>
-#ifdef LIBBSP_ARM_ATSAM_BSP_H
-#define IS_GRISP1 1
-#else
-#define IS_GRISP2 1
-#endif
 
-#ifdef IS_GRISP1
+#include <grisp.h>
+#ifdef GRISP_PLATFORM_GRISP_BASE
 #include <bsp/i2c.h>
 #include <grisp/pin-config.h>
-#endif /* IS_GRISP1 */
+#endif /* GRISP_PLATFORM_GRISP_BASE */
 #include <grisp/led.h>
 #include <grisp/init.h>
 #include <grisp/eeprom.h>
@@ -69,6 +73,7 @@
 #include "sd-card-test.h"
 #include "1wire.h"
 #include "pmod_rfid.h"
+#include "pmod_dio.h"
 
 #define STACK_SIZE_INIT_TASK	(64 * 1024)
 #define STACK_SIZE_SHELL	(64 * 1024)
@@ -79,18 +84,18 @@
 #define PRIO_WPA		(RTEMS_MAXIMUM_PRIORITY - 1)
 
 #define SPI_FDT_NAME "spi0"
-#define SPI_BUS "/dev/spibus"
 
 #define CMD_SPI_MAX_LEN 32
 
 const char *wpa_supplicant_conf = "/media/mmcsd-0-0/wpa_supplicant.conf";
 
-#ifdef IS_GRISP1
+#ifdef GRISP_PLATFORM_GRISP_BASE
 const Pin atsam_pin_config[] = {GRISP_PIN_CONFIG};
 const size_t atsam_pin_config_count = PIO_LISTSIZE(atsam_pin_config);
 const uint32_t atsam_matrix_ccfg_sysio = GRISP_MATRIX_CCFG_SYSIO;
-#endif /* IS_GRISP1 */
+#endif /* GRISP_PLATFORM_GRISP_BASE */
 
+#ifndef GRISP_PLATFORM_GRISP_NANO
 struct rtems_ftpd_configuration rtems_ftpd_configuration = {
 	.priority = 100,
 	.max_hook_filesize = 0,
@@ -101,6 +106,7 @@ struct rtems_ftpd_configuration rtems_ftpd_configuration = {
 	.idle = 5 * 60,
 	.access = 0
 };
+#endif
 
 static void
 start_shell(void)
@@ -117,6 +123,7 @@ start_shell(void)
 	assert(sc == RTEMS_SUCCESSFUL);
 }
 
+#ifndef GRISP_PLATFORM_GRISP_NANO
 static void
 create_wlandev(void)
 {
@@ -160,6 +167,7 @@ create_wlandev(void)
 		}
 	}
 }
+#endif
 
 static void
 led_task(rtems_task_argument arg)
@@ -205,6 +213,7 @@ init_led(void)
 	assert(sc == RTEMS_SUCCESSFUL);
 }
 
+#ifndef GRISP_PLATFORM_GRISP_NANO
 static int
 command_startftp(int argc, char *argv[])
 {
@@ -232,6 +241,7 @@ rtems_shell_cmd_t rtems_shell_STARTFTP_Command = {
 	NULL,                /* next */
 	0, 0, 0
 };
+#endif
 
 static void
 Init(rtems_task_argument arg)
@@ -244,35 +254,61 @@ Init(rtems_task_argument arg)
 
 	puts("\nGRiSP2 RTEMS Demo\n");
 
-#ifdef IS_GRISP1
+#ifdef GRISP_PLATFORM_GRISP_BASE
 	rv = atsam_register_i2c_0();
 	assert(rv == 0);
 #endif
-#ifdef IS_GRISP2
-	rv = spi_bus_register_imx(SPI_BUS, SPI_FDT_NAME);
-	assert(rv == 0);
+#ifdef GRISP_PLATFORM_GRISP2
+	if (grisp_is_industrialgrisp()) {
+		/* Industrial GRiSP */
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE,
+				GRISP_INDUSTRIAL_SPI_ONBOARD_FDT_ALIAS);
+		assert(rv == 0);
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE "-pmod",
+				GRISP_INDUSTRIAL_SPI_PMOD_FDT_ALIAS);
+		assert(rv == 0);
 
-	rv = i2c_bus_register_imx("/dev/i2c-1", "i2c0");
-	assert(rv == 0);
+		rv = i2c_bus_register_imx(GRISP_I2C0_DEVICE,
+				GRISP_INDUSTRIAL_I2C_FDT_ALIAS);
+		assert(rv == 0);
+	} else {
+		/* GRiSP2 */
+		rv = spi_bus_register_imx(GRISP_SPI_DEVICE,
+				GRISP_SPI_FDT_ALIAS);
+		assert(rv == 0);
 
-	rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
-	assert(rv == 0);
-#endif /* IS_GRISP2 */
+		rv = i2c_bus_register_imx("/dev/i2c-1", "i2c0");
+		assert(rv == 0);
 
+		rv = i2c_bus_register_imx("/dev/i2c-2", "i2c1");
+		assert(rv == 0);
+	}
+#endif /* GRISP_PLATFORM_GRISP2 */
+
+#ifdef RTC_ENABLED
+	setRealTimeToRTEMS();
+#endif
+
+#ifndef GRISP_PLATFORM_GRISP_NANO
 	printf("Init EEPROM\n");
 	grisp_eeprom_init();
 	rv = grisp_eeprom_get(&eeprom);
-#ifndef IS_GRISP1 /* On GRiSP1 the checksum hasn't been calculated correctly */
+#ifndef GRISP_PLATFORM_GRISP_BASE /* On GRiSP1 the checksum hasn't been calculated correctly */
 	if (rv == 0) {
 #endif
 		grisp_eeprom_dump(&eeprom);
-#ifndef IS_GRISP1
+#ifndef GRISP_PLATFORM_GRISP_BASE
 	} else {
 		printf("ERROR: Invalid EEPROM\n");
 	}
 #endif
+#else
+	/* FIXME: EEPROM would have to be re-implemented using STM HAL */
+	(void) rv;
+	(void) eeprom;
+#endif
 
-	grisp_init_sd_card();
+	grisp_init_sd_card("/media/mmcsd-0-0");
 	grisp_init_lower_self_prio();
 	grisp_init_libbsd();
 
@@ -286,11 +322,16 @@ Init(rtems_task_argument arg)
 	}
 
 	sleep(1);
+#ifndef GRISP_PLATFORM_GRISP_NANO
 	grisp_init_dhcpcd(PRIO_DHCP);
 
 	grisp_led_set2(false, false, true);
-	sleep(3);
-	grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA, create_wlandev);
+	if (!grisp_is_industrialgrisp()) {
+		sleep(3);
+		grisp_init_wpa_supplicant(wpa_supplicant_conf, PRIO_WPA,
+		    create_wlandev);
+	}
+#endif
 
 #ifdef EVENT_RECORDING
 	rtems_record_start_server(10, 1234, 10);
@@ -298,14 +339,32 @@ Init(rtems_task_argument arg)
 #endif /* EVENT_RECORDING */
 
 	init_led();
-#ifdef IS_GRISP2
-	// uncomment for testing RFID
-	//pmod_rfid_init(SPI_BUS, 1);
-#endif /* IS_GRISP2 */
+#ifdef GRISP_PLATFORM_GRISP2
+	if (grisp_is_industrialgrisp()) {
+		pmod_rfid_init(GRISP_SPI_DEVICE, 0);
+		pmod_dio_init(GRISP_SPI_DEVICE);
+	} else {
+		// uncomment for testing RFID
+		//pmod_rfid_init(GRISP_SPI_DEVICE, 1);
+	}
+#endif /* GRISP_PLATFORM_GRISP2 */
 	start_shell();
 
 	exit(0);
 }
+
+#ifdef RTC_ENABLED
+#ifdef GRISP_PLATFORM_GRISP2
+static struct mcp7940m_rtc rtc_ctx =
+	MCP7940M_RTC_INITIALIZER("/dev/i2c-1", 0x6f, false);
+
+rtc_tbl RTC_Table[] = {
+	MCP7940M_RTC_TBL_ENTRY("/dev/rtc", &rtc_ctx),
+};
+
+size_t RTC_Count = (sizeof(RTC_Table)/sizeof(rtc_tbl));
+#endif
+#endif
 
 /*
  * Configure LibBSD.
@@ -321,6 +380,9 @@ Init(rtems_task_argument arg)
  */
 #define CONFIGURE_MICROSECONDS_PER_TICK 10000
 
+#ifdef RTC_ENABLED
+#define CONFIGURE_APPLICATION_NEEDS_RTC_DRIVER
+#endif
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_STUB_DRIVER
@@ -363,23 +425,30 @@ Init(rtems_task_argument arg)
 #include <bsp/irq-info.h>
 #define CONFIGURE_SHELL_COMMANDS_INIT
 
+#ifdef GRISP_PLATFORM_GRISP_NANO
+  #define GRISP_NET_CMDS
+#else
+  #define GRISP_NET_CMDS \
+    &rtems_shell_ARP_Command, \
+    &rtems_shell_PFCTL_Command, \
+    &rtems_shell_PING_Command, \
+    &rtems_shell_IFCONFIG_Command, \
+    &rtems_shell_ROUTE_Command, \
+    &rtems_shell_NETSTAT_Command, \
+    &rtems_shell_DHCPCD_Command, \
+    &rtems_shell_HOSTNAME_Command, \
+    &rtems_shell_WLANSTATS_Command, \
+    &rtems_shell_STARTFTP_Command, \
+    &rtems_shell_WPA_SUPPLICANT_Command, \
+    &rtems_shell_WPA_SUPPLICANT_FORK_Command,
+#endif
+
 #define CONFIGURE_SHELL_USER_COMMANDS \
   &bsp_interrupt_shell_command, \
-  &rtems_shell_ARP_Command, \
-  &rtems_shell_PFCTL_Command, \
-  &rtems_shell_PING_Command, \
-  &rtems_shell_IFCONFIG_Command, \
-  &rtems_shell_ROUTE_Command, \
-  &rtems_shell_NETSTAT_Command, \
-  &rtems_shell_DHCPCD_Command, \
-  &rtems_shell_HOSTNAME_Command, \
   &rtems_shell_SYSCTL_Command, \
   &rtems_shell_VMSTAT_Command, \
-  &rtems_shell_WLANSTATS_Command, \
-  &rtems_shell_STARTFTP_Command, \
   &rtems_shell_BLKSTATS_Command, \
-  &rtems_shell_WPA_SUPPLICANT_Command, \
-  &rtems_shell_WPA_SUPPLICANT_FORK_Command, \
+  GRISP_NET_CMDS \
   &shell_PATTERN_FILL_Command, \
   &shell_PATTERN_CHECK_Command, \
   &shell_1wiretemp_command, \

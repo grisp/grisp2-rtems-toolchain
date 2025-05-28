@@ -1,8 +1,11 @@
 /external/fdt/*.tar.gz
 /fdt/b-dtb
 /rtems/5
+/rtems/6
 build
 /demo*/b-*/
+/nano*/b-*/
 external/libinih/b-imx7
 external/libinih/b-atsamv
+external/libinih/b-stm32*
 /package

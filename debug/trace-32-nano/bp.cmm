@@ -1,0 +1,17 @@
+// T32 Wed Nov 27 13:17:02 2024
+
+B::
+
+Break.RESet
+Break.CONFIG.VarConvert OFF
+Break.CONFIG.InexactData ON
+Break.CONFIG.InexactTrigger OFF
+Break.CONFIG.InexactResume ON
+Break.CONFIG.InexactAddress ON
+Break.CONFIG.MatchZone OFF
+Break.CONFIG.AlwaysAlive OFF
+Break.Set     bsp_reset /Program
+Break.Set     jump_to_app\12 /Program
+Break.Set     _Terminate /Program
+
+ENDDO

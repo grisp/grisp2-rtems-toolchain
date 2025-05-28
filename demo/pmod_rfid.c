@@ -25,17 +25,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <grisp.h>
 #include <bsp.h>
-#ifdef LIBBSP_ARM_ATSAM_BSP_H
-#define IS_GRISP1 1
-#else
-#define IS_GRISP2 1
-#endif
 
 #include <rtems.h>
 #include <rtems/shell.h>
 
-#ifdef IS_GRISP2
+#ifdef GRISP_PLATFORM_GRISP2
 #include <bsp/fdt.h>
 #include <bsp/imx-gpio.h>
 
@@ -228,6 +224,7 @@ pmod_rfid_transfer(
 		.bits_per_word = 8,
 		.mode = SPI_MODE_1,
 		.cs = ctx->cs,
+		.cs_change = true,
 	};
 
 	verb_print(ctx, VERBOSE_ALL, "Tx: ");
@@ -620,19 +617,21 @@ pmod_rfid_init_pins(struct pmod_rfid_ctx *ctx)
 {
 	rtems_status_code sc;
 	int node;
-	const char *path;
 	const void *fdt;
 
 	fdt = bsp_fdt_get();
-	path = fdt_get_alias(fdt, "spi0");
-	if (path == 0) {
+
+	node = fdt_node_offset_by_compatible(fdt, -1, "ti,trf7970a");
+	if (node < 0) {
 		return RTEMS_UNSATISFIED;
 	}
-	node = fdt_path_offset(fdt, path);
 
-	/* LED is connected to SS3 */
+	/* LED */
 	sc = imx_gpio_init_from_fdt_property(&ctx->led,
-	    node, "cs-gpios", IMX_GPIO_MODE_OUTPUT, 3);
+	    node, "grisp,led-gpios", IMX_GPIO_MODE_OUTPUT, 0);
+	if (sc != RTEMS_SUCCESSFUL) {
+		return sc;
+	}
 
 	/* Interrupt pin */
 	/* FIXME: The interrupt pin isn't used yet. Initialization is done so it
