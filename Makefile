@@ -81,9 +81,15 @@ export CFLAGS_OPTIMIZE_V ?= -O$(OPTIMIZATION) -g -ffunction-sections -fdata-sect
 help:
 	@grep -v grep $(MAKEFILE_LIST) | grep -A1 -h "#H" | sed -e '1!G;h;$$!d' -e 's/:[^\n]*\n/:\n\t/g' -e 's/#H//g' | grep -v -- --
 
+pre-patch:
+	cd external/rtems/ && patch --forward --batch --silent -b -r /dev/null -p1 < ../../patches/00100-utf-8.patch || echo "pre-patch already applied"
+
+post-patch:
+	patch --forward --batch --silent -b -r /dev/null -p0 < patches/00200-memory-mapping.patch || echo "post-patch already applied"
+
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update toolchain toolchain-revision bsp libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
+install: submodule-update pre-patch toolchain toolchain-revision bsp post-patch libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
 
 .PHONY: submodule-update
 #H Update the submodules.
@@ -394,6 +400,7 @@ demo:
 	make -C demo
 	RTEMS_BSP=$(BSP_GRISP1) make -C demo
 	RTEMS_BSP=$(BSP_GRISP_NANO) make -C demo
+	cd demo/b-stm32u5-grisp-nano && mv demo.bin grisp-nano.bin
 
 .PHONY: demo-clean
 #H Clean the demo application.
