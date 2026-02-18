@@ -54,6 +54,15 @@
 #include <grisp/power.h>
 
 #include <inih/ini.h>
+#include <stdint.h>
+
+#include <rtems/bspIo.h>
+#include <stm32u5xx_hal_cortex.h>
+#include <stm32u5xx_hal_dcache.h>
+#include <stm32u5xx_hal_icache.h>
+#include <stm32u5xx_ll_cortex.h>
+
+#include <stm32u5xx_hal_rcc.h>
 
 #define STACK_SIZE_INIT_TASK	(32 * 1024)
 #define STACK_SIZE_SHELL	(32 * 1024)
@@ -63,6 +72,9 @@
 extern char stm32u5_memory_app_begin[];
 extern char stm32u5_memory_app_end[];
 extern char stm32u5_memory_app_size[];
+extern char stm32u5_memory_bl_sram_begin[];
+extern char stm32u5_memory_bl_sram_end[];
+extern char stm32u5_memory_bl_sram_size[];
 #define RESET_VECTOR_OFFSET	0x00000004
 #define RESET_VECTOR_SIZE	4
 
@@ -236,21 +248,101 @@ static void _ARMV7M_Systick_cleanup(void)
 	systick->csr = 0;
 }
 
+static void MPU_Config(void)
+{
+  MPU_Region_InitTypeDef   app_region;
+  MPU_Region_InitTypeDef   bl_region;
+
+  /* Disable MPU before perloading and config update */
+  HAL_MPU_Disable();
+
+  /* Define cacheable memory via MPU */
+  MPU_Attributes_InitTypeDef   attr_region0;
+  attr_region0.Number             = MPU_ATTRIBUTES_NUMBER0;
+  attr_region0.Attributes         = 0xFFU ;
+  HAL_MPU_ConfigMemoryAttributes(&attr_region0);
+
+  MPU_Attributes_InitTypeDef   attr_region1;
+  attr_region1.Number             = MPU_ATTRIBUTES_NUMBER1;
+  attr_region1.Attributes         = 0xFFU ;
+  HAL_MPU_ConfigMemoryAttributes(&attr_region1);
+
+  bl_region.Enable           = MPU_REGION_ENABLE;
+  bl_region.Number           = MPU_REGION_NUMBER0;
+  bl_region.AttributesIndex  = MPU_ATTRIBUTES_NUMBER0;
+  bl_region.BaseAddress      = (uint32_t) stm32u5_memory_bl_sram_begin;
+  bl_region.LimitAddress     = (uint32_t) stm32u5_memory_bl_sram_end;
+  bl_region.AccessPermission = MPU_REGION_ALL_RW;
+  bl_region.DisableExec      = MPU_INSTRUCTION_ACCESS_ENABLE;
+  bl_region.IsShareable      = MPU_ACCESS_NOT_SHAREABLE;
+  HAL_MPU_ConfigRegion(&bl_region);
+
+  /* BaseAddress-LimitAddress configuration */
+  app_region.Enable           = MPU_REGION_ENABLE;
+  app_region.Number           = MPU_REGION_NUMBER1;
+  app_region.AttributesIndex  = MPU_ATTRIBUTES_NUMBER0;
+  app_region.BaseAddress      = (uint32_t) stm32u5_memory_app_begin;
+  app_region.LimitAddress     = (uint32_t) stm32u5_memory_app_end;
+  app_region.AccessPermission = MPU_REGION_ALL_RW;
+  app_region.DisableExec      = MPU_INSTRUCTION_ACCESS_ENABLE;
+  app_region.IsShareable      = MPU_ACCESS_NOT_SHAREABLE;
+  HAL_MPU_ConfigRegion(&app_region);
+
+  /* Enable the MPU */
+  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+  // HAL_MPU_Enable(MPU_HFNMI_PRIVDEF_NONE);
+}
+
+static void CACHE_Enable(void)
+{
+  DCACHE_HandleTypeDef hdcache;
+
+  /* Configure ICACHE associativity mode */
+  HAL_ICACHE_ConfigAssociativityMode(ICACHE_1WAY);
+
+  /* Enable ICACHE */
+  HAL_ICACHE_Enable();
+
+  /* Enable DCACHE clock */
+  __HAL_RCC_DCACHE1_CLK_ENABLE();
+
+  /* Enable DCACHE */
+  hdcache.Instance = DCACHE1;
+  hdcache.Init.ReadBurstType = DCACHE_READ_BURST_INCR;
+  HAL_DCACHE_Enable(&hdcache);
+}
+
 static void
 jump_to_app(void* start)
 {
-	rtems_interrupt_level level;
+    rtems_interrupt_level level;
 
-	rtems_interrupt_disable(level);
-	(void)level;
-	rtems_cache_disable_instruction();
-	rtems_cache_disable_data();
-	rtems_cache_invalidate_entire_instruction();
-	rtems_cache_invalidate_entire_data();
-	_ARMV7M_Systick_cleanup();
+	/* Power off the SD card so the app gets a clean card state */
+    grisp_power_switch(GRISP_POWER_SD, false);  /* PD7 HIGH = power off */
+    rtems_task_wake_after(RTEMS_MILLISECONDS_TO_TICKS(200));
 
-	void(*foo)(void) = (void(*)(void))(start);
-	foo();
+    rtems_interrupt_disable(level);
+
+    (void)level;
+    rtems_cache_flush_entire_data();
+    rtems_cache_disable_instruction();
+    rtems_cache_disable_data();
+    rtems_cache_invalidate_entire_instruction();
+    rtems_cache_invalidate_entire_data();
+    _ARMV7M_Systick_cleanup();
+	__HAL_RCC_SDMMC1_CLK_DISABLE();
+
+	rtems_interrupt_enable(level);
+
+    void(*foo)(void) = (void(*)(void))(start);
+    foo();
+}
+
+static void debug_mpu_regions(uint32_t region)
+{
+	uint32_t base = LL_MPU_GetRegionBaseAddress(region);
+	uint32_t end = LL_MPU_GetRegionLimitAddress(region);
+	printk("  R%lu base=%08lx end=%08lx\n", (unsigned long)region, (unsigned long)base, (unsigned long)end);
 }
 
 static void
@@ -261,6 +353,31 @@ start_app_from_ram(void)
 
 	reset_vector = (void *)(stm32u5_memory_app_begin + RESET_VECTOR_OFFSET);
 	app_start = (void *)(*reset_vector);
+
+
+	// MPU_Config();
+	// CACHE_Enable();
+
+	rtems_task_wake_after(RTEMS_MILLISECONDS_TO_TICKS(2000));
+
+	// Print if MPU is enabled
+	printf("MPU is enabled: %d\n", LL_MPU_IsEnabled());
+
+	// MPU regions debug
+	debug_mpu_regions(LL_MPU_REGION_NUMBER0);
+	debug_mpu_regions(LL_MPU_REGION_NUMBER1);
+	debug_mpu_regions(LL_MPU_REGION_NUMBER2);
+	debug_mpu_regions(LL_MPU_REGION_NUMBER3);
+	debug_mpu_regions(LL_MPU_REGION_NUMBER4);
+	debug_mpu_regions(LL_MPU_REGION_NUMBER5);
+	debug_mpu_regions(LL_MPU_REGION_NUMBER6);
+	debug_mpu_regions(LL_MPU_REGION_NUMBER7);
+
+
+	// Sleep for 1 second
+	rtems_task_wake_after(RTEMS_MILLISECONDS_TO_TICKS(2000));
+
+	printf("boot: Starting app from ram\n");
 	jump_to_app(app_start);
 }
 
@@ -297,9 +414,6 @@ load_via_file(const char *file)
 
 		if (in > RESET_VECTOR_OFFSET + RESET_VECTOR_SIZE) {
 			stop_led_timer();
-
-			/* Enough time to print all messages. */
-			rtems_task_wake_after(RTEMS_MILLISECONDS_TO_TICKS(100));
 
 			start_app_from_ram();
 		}

@@ -9,3 +9,7 @@ external/libinih/b-imx7
 external/libinih/b-atsamv
 external/libinih/b-stm32*
 /package
+
+.DS_Store
+.vscode
+.cursor

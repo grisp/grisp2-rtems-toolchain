@@ -5,6 +5,7 @@
 MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ARCH = arm
+BSP_GRISP_NANO_BL = stm32u5-grisp-nano-bl
 BSP_GRISP_NANO = stm32u5-grisp-nano
 BSP_GRISP2 = imx7
 BSP_GRISP1 = atsamv
@@ -153,7 +154,7 @@ bsp:
 
 .PHONY: bsp.mk
 #H Build a Makefile helper for the applications.
-bsp.mk: $(PREFIX)/make/custom/$(BSP_GRISP2).mk $(PREFIX)/make/custom/$(BSP_GRISP1).mk $(PREFIX)/make/custom/$(BSP_GRISP_NANO).mk
+bsp.mk: $(PREFIX)/make/custom/$(BSP_GRISP2).mk $(PREFIX)/make/custom/$(BSP_GRISP1).mk $(PREFIX)/make/custom/$(BSP_GRISP_NANO).mk $(PREFIX)/make/custom/$(BSP_GRISP_NANO_BL).mk
 $(PREFIX)/make/custom/$(BSP_GRISP2).mk: src/bsp.mk
 	cat $^ | sed \
 	    -e "s/##RTEMS_API##/$(RTEMS_VERSION)/g" \
@@ -170,6 +171,12 @@ $(PREFIX)/make/custom/$(BSP_GRISP_NANO).mk: src/bsp.mk
 	cat $^ | sed \
 	    -e "s/##RTEMS_API##/$(RTEMS_VERSION)/g" \
 	    -e "s/##RTEMS_BSP##/$(BSP_GRISP_NANO)/g" \
+	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
+	    > $@
+$(PREFIX)/make/custom/$(BSP_GRISP_NANO_BL).mk: src/bsp.mk
+	cat $^ | sed \
+	    -e "s/##RTEMS_API##/$(RTEMS_VERSION)/g" \
+	    -e "s/##RTEMS_BSP##/$(BSP_GRISP_NANO_BL)/g" \
 	    -e "s/##RTEMS_CPU##/$(ARCH)/g" \
 	    > $@
 
@@ -190,6 +197,12 @@ libbsd:
 		true
 	echo "INCLUDE linkcmds.ospi" > \
 		"$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds"
+	[ ! -e "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO_BL)/lib/linkcmds.org" ] && \
+		mv "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO_BL)/lib/linkcmds" \
+		    "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO_BL)/lib/linkcmds.org" || \
+		true
+	echo "INCLUDE linkcmds.ospi" > \
+		"$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO_BL)/lib/linkcmds"
 	# End of workaround for GRiSP1 and Nano
 	cd $(SRC_LIBBSD) && ./waf configure \
 	    --prefix=$(PREFIX) \
@@ -202,7 +215,7 @@ libbsd:
 	cd $(SRC_LIBBSD) && ./waf install
 	cd $(SRC_LIBBSD) && ./waf configure \
 	    --prefix=$(PREFIX) \
-	    --rtems-bsps=$(ARCH)/$(BSP_GRISP_NANO) \
+	    --rtems-bsps=$(ARCH)/$(BSP_GRISP_NANO),$(ARCH)/$(BSP_GRISP_NANO_BL) \
 	    --enable-warnings \
 	    --optimization=$(OPTIMIZATION) \
 	    --buildset=$(LIBBSD_NANO_BUILDSET) \
@@ -214,6 +227,8 @@ libbsd:
 	    "$(PREFIX)/$(TARGET)/$(BSP_GRISP1)/lib/linkcmds"
 	cp "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds.org" \
 	    "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO)/lib/linkcmds"
+	cp "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO_BL)/lib/linkcmds.org" \
+	    "$(PREFIX)/$(TARGET)/$(BSP_GRISP_NANO_BL)/lib/linkcmds"
 	# End of workarounds for GRiSP1 and Nano
 
 .PHONY: libgrisp
@@ -222,6 +237,7 @@ libgrisp:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP2) -C $(SRC_LIBGRISP) install
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP1) -C $(SRC_LIBGRISP) install
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP_NANO) -C $(SRC_LIBGRISP) install
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP_NANO_BL) -C $(SRC_LIBGRISP) install
 
 .PHONY: libinih
 #H Build and install libinih
@@ -229,6 +245,7 @@ libinih:
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP2) -C $(SRC_LIBINIH) clean install
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP1) -C $(SRC_LIBINIH) clean install
 	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP_NANO) -C $(SRC_LIBINIH) clean install
+	make RTEMS_ROOT=$(PREFIX) RTEMS_BSP=$(BSP_GRISP_NANO_BL) -C $(SRC_LIBINIH) clean install
 
 .PHONY: fdt
 #H Build the flattened device tree.

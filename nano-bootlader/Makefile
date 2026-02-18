@@ -1,6 +1,6 @@
 MAKEFILE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 RTEMS_ROOT ?= $(MAKEFILE_DIR)/../rtems/6
-RTEMS_BSP ?= stm32u5-grisp-nano
+RTEMS_BSP ?= stm32u5-grisp-nano-bl
 
 include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).mk
 
