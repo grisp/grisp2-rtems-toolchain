@@ -366,6 +366,7 @@ cryptoauthlib: cmake_toolchain_config
 			-DATCA_USE_ATCAB_FUNCTIONS=ON \
 			-DATCA_PRINTF=OFF \
 			-DUNIX=true \
+			-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 			-DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_CONFIG) ..
 	cd $(SRC_CRYPTOAUTHLIB)/build && \
 		make DESTDIR=$(SRC_CRYPTOAUTHLIB)/install install && \
