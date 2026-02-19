@@ -85,12 +85,9 @@ help:
 pre-patch:
 	cd external/rtems/ && patch --forward --batch --silent -b -r /dev/null -p1 < ../../patches/00100-utf-8.patch || echo "pre-patch already applied"
 
-post-patch:
-	patch --forward --batch --silent -b -r /dev/null -p0 < patches/00200-memory-mapping.patch || echo "post-patch already applied"
-
 .PHONY: install
 #H Build and install the complete toolchain, libraries, fdt and so on.
-install: submodule-update pre-patch toolchain toolchain-revision bsp post-patch libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
+install: submodule-update pre-patch toolchain toolchain-revision bsp libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
 
 .PHONY: submodule-update
 #H Update the submodules.
