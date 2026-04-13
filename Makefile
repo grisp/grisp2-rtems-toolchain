@@ -71,6 +71,24 @@ OPTIMIZATION = 2
 EXTRA_BSP_OPTS =
 endif
 
+# On macOS, files downloaded via browser/AirDrop can inherit quarantine and
+# trigger Gatekeeper for freshly built cross-tools (e.g. arm-rtems5-ar).
+ifeq ($(UNAME),Darwin)
+define UNQUARANTINE_CMD
+if command -v xattr >/dev/null 2>&1; then \
+	for d in "$(PREFIX)/$(TARGET)/bin" "$(PREFIX)/bin"; do \
+		if [ -d "$$d" ]; then \
+			xattr -dr com.apple.quarantine "$$d" 2>/dev/null || true; \
+		fi; \
+	done; \
+fi
+endef
+else
+define UNQUARANTINE_CMD
+true
+endef
+endif
+
 
 export ORGPATH := $(PATH)
 export PATH := $(PREFIX)/bin:$(PATH)
@@ -101,11 +119,13 @@ bootstrap:
 toolchain:
 	mkdir -p $(BUILD_LOGS)
 	rm -rf $(RSB)/rtems/build
+	@$(UNQUARANTINE_CMD)
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
 	    --prefix=$(PREFIX) \
 	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
 		--with-fortran \
 	    $(RTEMS_VERSION)/rtems-$(ARCH)
+	@$(UNQUARANTINE_CMD)
 	rm -rf $(RSB)/rtems/build
 
 .PHONY: toolchain-revision
@@ -338,6 +358,7 @@ cryptoauthlib: cmake_toolchain_config
 			-DATCA_USE_ATCAB_FUNCTIONS=ON \
 			-DATCA_PRINTF=OFF \
 			-DUNIX=true \
+			-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 			-DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_CONFIG) ..
 	cd $(SRC_CRYPTOAUTHLIB)/build && \
 		make DESTDIR=$(SRC_CRYPTOAUTHLIB)/install install && \
@@ -349,11 +370,20 @@ cryptoauthlib: cmake_toolchain_config
 		touch $(PREFIX)/$(TARGET)/$(BSP)/lib/include/cryptoauthlib/atca_start_iface.h
 
 
+BLAS_CPU_FLAGS = -march=armv7-a -marm -mfloat-abi=hard -mtune=cortex-a7 -mfpu=neon
+BLAS_CFLAGS = -O3 $(BLAS_CPU_FLAGS)
+BLAS_FFLAGS = -O3 $(BLAS_CPU_FLAGS)
+BLAS_FFLAGS_NOOPT = -O0 -frecursive $(BLAS_CPU_FLAGS)
+
 BLAS_TOOLS=\
 			BLLIB='$(MAKEFILE_DIR)external/BLAS/CBLAS/lib/blas_ARM.a' \
 			CBLIB='$(MAKEFILE_DIR)external/BLAS/CBLAS/lib/cblas_ARM.a' \
 			CC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gcc' \
 			FC='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/bin/$(ARCH)-rtems$(RTEMS_VERSION)-gfortran' \
+			CFLAGS='$(BLAS_CFLAGS)' \
+			FFLAGS='$(BLAS_FFLAGS)' \
+			FFLAGS_DRV='$(BLAS_FFLAGS)' \
+			FFLAGS_NOOPT='$(BLAS_FFLAGS_NOOPT)' \
 			RANLIB='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ranlib' \
 			AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar' \
 			ARCH=$(AR)
