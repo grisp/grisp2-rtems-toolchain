@@ -106,10 +106,10 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: package-${{ runner.os }}
-          path: package
+          path: artifact
 
       - name: Upload to S3
-        run: aws s3 cp --acl public-read package/* s3://grisp/platforms/grisp2/toolchain/
+        run: aws s3 cp --recursive --acl public-read artifact/package/ s3://grisp/platforms/grisp2/toolchain/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.GRISP_S3_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.GRISP_S3_SECRET_ACCESS_KEY }}
