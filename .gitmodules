@@ -5,7 +5,7 @@
 [submodule "rtems"]
 	path = external/rtems
 	url = https://github.com/grisp/rtems.git
-	branch = grisp2-devel-20200430
+	branch = grisp2-20260804
 [submodule "rtems-libbsd"]
 	path = external/rtems-libbsd
 	url = https://github.com/grisp/rtems-libbsd.git
