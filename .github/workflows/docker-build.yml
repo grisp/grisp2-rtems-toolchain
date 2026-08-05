@@ -88,7 +88,6 @@ jobs:
         with:
           username: ${{ vars.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          scope: grisp/grisp2-rtems-toolchain@push
 
       - name: Create and push manifest
         run: |
