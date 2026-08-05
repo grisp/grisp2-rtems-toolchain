@@ -27,12 +27,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
-    name: Build and push multi-architecture image
+  build:
+    name: Build and push ${{ matrix.platform }} image
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
       IMAGE_TAG: ${{ inputs.tag || github.event.client_payload.tag }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            platform_suffix: amd64
+          - platform: linux/arm64
+            platform_suffix: arm64
 
     steps:
       - name: Check out the requested tag
@@ -60,7 +68,34 @@ jobs:
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          provenance: false
+          platforms: ${{ matrix.platform }}
           push: true
           pull: true
-          tags: grisp/grisp2-rtems-toolchain:${{ env.IMAGE_TAG }}
+          tags: grisp/grisp2-rtems-toolchain:${{ env.IMAGE_TAG }}-${{ matrix.platform_suffix }}
+
+  publish:
+    name: Publish multi-architecture manifest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    needs: build
+    env:
+      IMAGE_TAG: ${{ inputs.tag || github.event.client_payload.tag }}
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          username: ${{ vars.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          scope: grisp/grisp2-rtems-toolchain@push
+
+      - name: Create and push manifest
+        run: |
+          docker buildx imagetools create \
+            --tag grisp/grisp2-rtems-toolchain:${IMAGE_TAG} \
+            grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-amd64 \
+            grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-arm64
