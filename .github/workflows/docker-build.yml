@@ -29,7 +29,7 @@ concurrency:
 jobs:
   build:
     name: Build and push ${{ matrix.platform }} image
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 360
     env:
       IMAGE_TAG: ${{ inputs.tag || github.event.client_payload.tag }}
@@ -39,8 +39,10 @@ jobs:
         include:
           - platform: linux/amd64
             platform_suffix: amd64
+            runner: ubuntu-24.04
           - platform: linux/arm64
             platform_suffix: arm64
+            runner: ubuntu-24.04-arm
 
     steps:
       - name: Check out the requested tag
@@ -48,11 +50,6 @@ jobs:
         with:
           ref: ${{ env.IMAGE_TAG }}
           persist-credentials: false
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
-        with:
-          platforms: arm64
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
