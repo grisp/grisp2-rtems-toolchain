@@ -93,5 +93,6 @@ jobs:
         run: |
           docker buildx imagetools create \
             --tag grisp/grisp2-rtems-toolchain:${IMAGE_TAG} \
+            --tag grisp/grisp2-rtems-toolchain:latest \
             grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-amd64 \
             grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-arm64
