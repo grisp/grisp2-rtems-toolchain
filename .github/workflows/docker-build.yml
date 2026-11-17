@@ -33,6 +33,7 @@ jobs:
     timeout-minutes: 360
     env:
       IMAGE_TAG: ${{ inputs.tag || github.event.client_payload.tag }}
+      PLATFORM_SUFFIX: ${{ matrix.platform_suffix }}
     strategy:
       fail-fast: false
       matrix:
@@ -51,6 +52,27 @@ jobs:
           ref: ${{ env.IMAGE_TAG }}
           persist-credentials: false
 
+      - name: Free space for the compiler build
+        run: |
+          # All compilation runs in Docker; these preinstalled host SDKs are unused.
+          df -h /
+          sudo rm -rf /opt/hostedtoolcache/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker image prune --all --force
+          df -h /
+
+      - name: Prepare Rust SDK validation
+        run: |
+          if [ "$(git ls-files --stage -- external/rtems-rust | cut -d ' ' -f 1)" = 160000 ]; then
+            git submodule update --init -- external/rtems-rust
+          fi
+          if [ ! -f external/rtems-rust/tests/check-installed.py ]; then
+            echo "::error::The requested tag must include Rust SDK support."
+            exit 1
+          fi
+
+      - name: Validate Rust source pins
+        run: python3 external/rtems-rust/tests/check-inputs.py
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
@@ -61,15 +83,31 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           scope: grisp/grisp2-rtems-toolchain@push
 
-      - name: Build and push
+      - name: Build Rust-enabled image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           provenance: false
           platforms: ${{ matrix.platform }}
-          push: true
+          load: true
+          push: false
           pull: true
+          build-args: |
+            RUST_SUPPORT=1
           tags: grisp/grisp2-rtems-toolchain:${{ env.IMAGE_TAG }}-${{ matrix.platform_suffix }}
+
+      - name: Validate installed Rust SDK
+        run: |
+          docker run --rm --network none \
+            --user "$(id -u):$(id -g)" \
+            --mount "type=bind,source=$PWD/external/rtems-rust/tests/check-installed.py,target=/tmp/check-rust-sdk.py,readonly" \
+            "grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-${PLATFORM_SUFFIX}" \
+            sh -ec 'exec python3 /tmp/check-rust-sdk.py \
+              --prefix "$GRISP_TOOLCHAIN" --c-prefix "$GRISP_TOOLCHAIN" \
+              --output /tmp/rust-sdk-check --skip-host-nifs'
+
+      - name: Push validated image
+        run: docker push "grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-${PLATFORM_SUFFIX}"
 
   publish:
     name: Publish multi-architecture manifest
@@ -92,7 +130,7 @@ jobs:
       - name: Create and push manifest
         run: |
           docker buildx imagetools create \
-            --tag grisp/grisp2-rtems-toolchain:${IMAGE_TAG} \
+            --tag "grisp/grisp2-rtems-toolchain:${IMAGE_TAG}" \
             --tag grisp/grisp2-rtems-toolchain:latest \
-            grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-amd64 \
-            grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-arm64
+            "grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-amd64" \
+            "grisp/grisp2-rtems-toolchain:${IMAGE_TAG}-arm64"
