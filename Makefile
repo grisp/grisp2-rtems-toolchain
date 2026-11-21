@@ -17,13 +17,31 @@ SRC_LIBGRISP = $(MAKEFILE_DIR)/external/libgrisp
 SRC_LIBINIH = $(MAKEFILE_DIR)/external/libinih
 SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
+SRC_OPENOCD_JIMTCL = $(MAKEFILE_DIR)/vendor/openocd/jimtcl-a77ef1a6218fad4c928ddbdc03c1aedc41007e70.tar.gz
+OPENOCD_JIMTCL_REV = a77ef1a6218fad4c928ddbdc03c1aedc41007e70
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 SRC_CRYPTOAUTHLIB = $(MAKEFILE_DIR)/external/cryptoauthlib
 SRC_BLAS = $(MAKEFILE_DIR)/external/lapack
+SRC_RTEMS_RUST = $(MAKEFILE_DIR)/external/rtems-rust
+BUILD_RUST = $(MAKEFILE_DIR)/build/rust
+RUST_C_PREFIX ?= $(PREFIX)
+RUST_SUPPORT ?= 0
+RUST_RSB_FLAGS ?= --no-clean
+RUST_RSB_CONFIGDIR = $(SRC_RTEMS_RUST)/config:$(RSB)/source-builder/config:$(RSB)/bare/config:$(RSB)/rtems/config
+RUST_RSB_PATCHDIR = $(SRC_RTEMS_RUST)/patches:$(RSB)/source-builder/patches:$(RSB)/bare/patches:$(RSB)/rtems/patches
+RUST_RSB = $(RSB)/source-builder/sb-set-builder --topdir=$(BUILD_RUST) --prefix=$(PREFIX) --configdir=$(RUST_RSB_CONFIGDIR) --patchdir=$(RUST_RSB_PATCHDIR) --with-rust-project=$(SRC_RTEMS_RUST) --with-rust-c-prefix=$(RUST_C_PREFIX) --with-rust-jobs=$(NUMCORE) --jobs=$(NUMCORE) $(call rsb_sources,rust) $(RUST_RSB_FLAGS)
+RUST_INPUTS = $(wildcard $(SRC_RTEMS_RUST)/config/* $(SRC_RTEMS_RUST)/config/rust/* $(SRC_RTEMS_RUST)/config/grisp2/* $(SRC_RTEMS_RUST)/patches/*) $(filter-out %/__pycache__,$(wildcard $(SRC_RTEMS_RUST)/tools/*)) $(SRC_RTEMS_RUST)/sources.json $(MAKEFILE_DIR)/Makefile
+RUST_STATE = python3 $(SRC_RTEMS_RUST)/tools/build-state --build-root=$(BUILD_RUST) --prefix=$(PREFIX) --c-prefix=$(RUST_C_PREFIX) --c-target=$(TARGET)
+RUST_CORE_INSTALLED = $(PREFIX)/share/rtems/rust-support.json
+RUST_NIF_INSTALLED = $(PREFIX)/share/rust-nif/support.json
+ifeq ($(RUST_REBUILD),1)
+RUST_FORCE = rust-force
+endif
 BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
 BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
+BUILD_OPENOCD_SRC = $(BUILD_OPENOCD)/src
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 CMAKE_TOOLCHAIN_TEMPLATE = $(MAKEFILE_DIR)/cryptoauthlib/grisp2-toolchain.cmake.in
 CMAKE_TOOLCHAIN_CONFIG = $(PREFIX)/share/grisp2-toolchain.cmake
@@ -44,6 +62,31 @@ endef
 export BUILDINFO_ERL
 
 UNAME := $(shell uname -s)
+
+USE_CCACHE ?= 0
+rsb_sources = $(if $(RSB_SOURCE_CACHE),--sourcedir="$(RSB_SOURCE_CACHE)/$(1)")
+
+ifeq ($(USE_CCACHE),1)
+export GRISP_CCACHE := $(shell command -v ccache)
+ifeq ($(GRISP_CCACHE),)
+$(error USE_CCACHE=1 requires ccache on PATH)
+endif
+# Re-evaluate include search paths so newly added headers invalidate a cache hit.
+export CCACHE_NODIRECT := 1
+ifeq ($(UNAME),Darwin)
+# /usr/bin/cc and /usr/bin/c++ are shims for the selected Xcode toolchain.
+export CCACHE_COMPILERCHECK ?= %compiler% --version
+else
+export CCACHE_COMPILERCHECK ?= content
+endif
+RSB_CCACHE_DIR := $(BUILD_LOGS)/ccache
+RSB_CCACHE_PREP := rsb-ccache
+RSB_CCACHE_ARGS := --macros="$(RSB_CCACHE_DIR)/compilers.mc"
+RSB_HOST_CC := $(if $(filter Darwin,$(UNAME)),/usr/bin/cc,gcc)
+RSB_HOST_CXX := $(if $(filter Darwin,$(UNAME)),/usr/bin/c++,g++)
+RUST_CCACHE_ENV := CMAKE_C_COMPILER_LAUNCHER="/bin/sh;$(MAKEFILE_DIR)src/ccache-launcher.sh" \
+	CMAKE_CXX_COMPILER_LAUNCHER="/bin/sh;$(MAKEFILE_DIR)src/ccache-launcher.sh"
+endif
 
 # macOS and FreeBSD
 ifneq (,$(filter $(UNAME),Darwin FreeBSD))
@@ -103,6 +146,39 @@ help:
 #H Build and install the complete toolchain, libraries, fdt and so on.
 install: submodule-update toolchain toolchain-revision bootstrap bsp bsp-grisp1 libbsd fdt bsp.mk libgrisp libinih cryptoauthlib barebox-install blas
 
+.PHONY: rust-support rust-toolchain rust-nif-support rust-check rust-sources rust-force
+#H Build or update all Rust support against the existing C SDK.
+rust-support: rust-toolchain rust-nif-support
+
+#H Build or update Rust/Cargo/LLVM/target std against an installed C SDK.
+rust-toolchain: $(RUST_CORE_INSTALLED)
+
+# Keep the context timestamp stable when only scheduling options change.
+$(BUILD_RUST)/inputs.json: rust-force
+	$(RUST_STATE) context
+
+$(RUST_CORE_INSTALLED): $(BUILD_RUST)/inputs.json $(RUST_INPUTS) $(RUST_FORCE)
+	mkdir -p $(BUILD_RUST)
+	rust_reuse=$$($(RUST_STATE) reuse-option $(if $(RUST_FORCE),--fresh)) && \
+		cd $(BUILD_RUST) && $(RUST_CCACHE_ENV) $(RUST_RSB) $$rust_reuse --log=$(BUILD_RUST)/core.log grisp2/grisp2-rust-tools.bset
+
+#H Build or update the bundler and NIF source payload against the Rust SDK.
+rust-nif-support: $(RUST_NIF_INSTALLED)
+
+$(RUST_NIF_INSTALLED): $(RUST_CORE_INSTALLED) $(BUILD_RUST)/inputs.json $(RUST_INPUTS) $(RUST_FORCE)
+	mkdir -p $(BUILD_RUST)
+	cd $(BUILD_RUST) && $(RUST_RSB) --log=$(BUILD_RUST)/nif.log grisp2/grisp2-rust-nif-support.bset
+
+#H Resolve Rust recipes and report dependencies without compiling.
+rust-check:
+	mkdir -p $(BUILD_RUST)
+	cd $(BUILD_RUST) && $(RUST_RSB) --dry-run --list-deps --log=$(BUILD_RUST)/check.log grisp2/grisp2-rust-tools.bset grisp2/grisp2-rust-nif-support.bset
+
+#H Prefetch declared Rust sources, patches and bootstrap inputs without compiling.
+rust-sources:
+	mkdir -p $(BUILD_RUST)
+	cd $(BUILD_RUST) && $(RUST_RSB) --source-only-download --no-install --log=$(BUILD_RUST)/sources.log grisp2/grisp2-rust-tools.bset grisp2/grisp2-rust-nif-support.bset
+
 .PHONY: submodule-update
 #H Update the submodules.
 submodule-update:
@@ -116,17 +192,31 @@ bootstrap:
 
 .PHONY: toolchain
 #H Build and install the toolchain.
-toolchain:
+toolchain: $(RSB_CCACHE_PREP)
 	mkdir -p $(BUILD_LOGS)
 	rm -rf $(RSB)/rtems/build
 	@$(UNQUARANTINE_CMD)
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
-	    --prefix=$(PREFIX) \
+	    --prefix=$(PREFIX) --jobs=$(NUMCORE) \
+	    $(RSB_CCACHE_ARGS) $(call rsb_sources,c) \
 	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
 		--with-fortran \
 	    $(RTEMS_VERSION)/rtems-$(ARCH)
 	@$(UNQUARANTINE_CMD)
 	rm -rf $(RSB)/rtems/build
+	# Rebuild std before advertising Rust support for a replaced C SDK.
+	rm -f $(RUST_CORE_INSTALLED) $(RUST_NIF_INSTALLED)
+
+ifeq ($(USE_CCACHE),1)
+.PHONY: rsb-ccache
+rsb-ccache:
+	mkdir -p "$(RSB_CCACHE_DIR)"
+	printf '%s\n' '#!/bin/sh' 'exec "$$GRISP_CCACHE" $(RSB_HOST_CC) "$$@"' > "$(RSB_CCACHE_DIR)/cc"
+	printf '%s\n' '#!/bin/sh' 'exec "$$GRISP_CCACHE" $(RSB_HOST_CXX) "$$@"' > "$(RSB_CCACHE_DIR)/c++"
+	chmod +x "$(RSB_CCACHE_DIR)/cc" "$(RSB_CCACHE_DIR)/c++"
+	printf "%s\n" "__cc: exe, required, '$(RSB_CCACHE_DIR)/cc'" \
+		"__cxx: exe, required, '$(RSB_CCACHE_DIR)/c++'" > "$(RSB_CCACHE_DIR)/compilers.mc"
+endif
 
 .PHONY: toolchain-revision
 #H Create toolchain revision files
@@ -277,9 +367,18 @@ endif
 openocd:
 	# Note: Use a hack to _not_ use the RTEMS tools environment. The RTEMS
 	# aclocal version isn't compatible with OpenOCD
-	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" ./bootstrap
-	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" ./configure --prefix="$(PREFIX)" \
+	rm -rf $(BUILD_OPENOCD)
+	mkdir -p $(BUILD_OPENOCD_SRC)
+	test "$$(git -C $(SRC_OPENOCD) ls-tree HEAD jimtcl | awk '{print $$3}')" = "$(OPENOCD_JIMTCL_REV)" || { printf '%s\n' "OpenOCD's pinned Jim Tcl revision does not match the vendored source" >&2; exit 1; }
+	git -C $(SRC_OPENOCD) archive --format=tar HEAD > $(BUILD_OPENOCD)/openocd.tar
+	tar -xf $(BUILD_OPENOCD)/openocd.tar -C $(BUILD_OPENOCD_SRC)
+	rm $(BUILD_OPENOCD)/openocd.tar
+	mkdir -p $(BUILD_OPENOCD_SRC)/jimtcl
+	tar -xzf $(SRC_OPENOCD_JIMTCL) --strip-components=1 -C $(BUILD_OPENOCD_SRC)/jimtcl
+	cd $(BUILD_OPENOCD_SRC) && PATH="$(ORGPATH)" ./bootstrap nosubmodule
+	cd $(BUILD_OPENOCD) && PATH="$(ORGPATH)" ./src/configure --prefix="$(PREFIX)" \
 	    --enable-ftdi \
+	    --disable-internal-libjaylink \
 	    --disable-stlink \
 	    --disable-ti-icdi \
 	    --disable-ulink \
@@ -314,7 +413,7 @@ openocd:
 	    --disable-minidriver-dummy \
 	    --disable-remote-bitbang \
 	    --disable-werror
-	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" make -j$(NUMCORE) install
+	cd $(BUILD_OPENOCD) && PATH="$(ORGPATH)" make -j$(NUMCORE) install
 
 .PHONY: imx_uart
 #H Build the imx_uart tool for loading a bootloader
@@ -396,10 +495,10 @@ AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar'
 #H Build the BLAS-LAPACKE library.
 blas:
 	cp external/BLAS/make.inc $(SRC_BLAS)
-	cd $(SRC_BLAS) && make blaslib $(BLAS_TOOLS)
-	cd $(SRC_BLAS) && make cblaslib $(BLAS_TOOLS)
-	cd $(SRC_BLAS) && make lapacklib $(BLAS_TOOLS)
-	cd $(SRC_BLAS) && make lapackelib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && $(MAKE) -j$(NUMCORE) blaslib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && $(MAKE) -j$(NUMCORE) cblaslib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && $(MAKE) -j$(NUMCORE) lapacklib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && $(MAKE) -j$(NUMCORE) lapackelib $(BLAS_TOOLS)
 	cd $(SRC_BLAS) &&\
 		$(AR) -x librefblas.a &&\
 		$(AR) -x libcblas.a &&\
@@ -438,7 +537,7 @@ package:
 .PHONY: docker-build
 #H Build the toolchain with tag 'local'
 docker-build:
-	docker build -t grisp/grisp2-rtems-toolchain:local .
+	docker build --build-arg RUST_SUPPORT=$(RUST_SUPPORT) --build-arg USE_CCACHE=$(USE_CCACHE) --build-arg NUMCORE=$(NUMCORE) -t grisp/grisp2-rtems-toolchain:local .
 
 .PHONY: docker-build-push
 #H Build the toolchain with the given tag and push it, for example 'make docker-build-push TAG=latest'
@@ -447,4 +546,4 @@ docker-build-push:
 		echo "Error: TAG is not set. Usage: make docker-build-push TAG=<tag>"; \
 		exit 1; \
 	fi
-	docker build -t grisp/grisp2-rtems-toolchain:$(TAG) --push .
+	docker build --build-arg RUST_SUPPORT=1 --build-arg USE_CCACHE=$(USE_CCACHE) --build-arg NUMCORE=$(NUMCORE) -t grisp/grisp2-rtems-toolchain:$(TAG) --push .

@@ -24,10 +24,14 @@ running on GRiSP2. This includes:
 Building the toolchain on macOS requires the following dependencies:
 
 * [Xcode][1] or [Command Line Tools for Xcode][2].
-* `python` (2 or 3)
+* `python` (Python 3)
 * `dtc`
 * `u-boot-tools`
 * `texinfo`
+* `cmake`
+* `ninja`
+* `pkg-config`
+* `openssl`
 
 Building OpenOCD additionally requires
 
@@ -35,13 +39,12 @@ Building OpenOCD additionally requires
 * `automake`
 * `libtool`
 * `libusb`
-* `pkg-config`
 
 **Install with Homebrew**
 
 ```sh
-brew install python dtc u-boot-tools texinfo
-brew install autoconf automake libtool libusb pkg-config # OpenOCD
+brew install python dtc u-boot-tools texinfo cmake ninja pkg-config openssl
+brew install autoconf automake libtool libusb # OpenOCD
 ```
 
 #### Ubuntu
@@ -60,6 +63,13 @@ Building the toolchain on Ubuntu requires the following packages:
 * `python-is-python3`
 * `libpython3-dev`
 * `python3-dev`
+* `curl`
+* `ninja-build`
+* `pkg-config`
+* `libssl-dev`
+* `libcurl4-openssl-dev`
+* `zlib1g-dev`
+* `xz-utils`
 
 Building OpenOCD additionally requires
 
@@ -68,7 +78,7 @@ Building OpenOCD additionally requires
 **Install with apt-get**
 
 ```
-sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools lzop libusb-1.0-0-dev python3 python-is-python3 libpython3-dev python3-dev
+sudo apt-get install build-essential flex bison cmake texinfo device-tree-compiler u-boot-tools lzop libusb-1.0-0-dev python3 python-is-python3 libpython3-dev python3-dev curl ninja-build pkg-config libssl-dev libcurl4-openssl-dev zlib1g-dev xz-utils
 ```
 
 ### Building
@@ -89,6 +99,69 @@ To build the demo application use a
     make demo
 
 in the project root directory.
+
+### Optional Rust NIF support
+
+`make install` builds the C/RTEMS SDK. To add Rust after that installation, run:
+
+```sh
+make rust-support
+```
+
+This installs the Rust compiler, Cargo, matching standard libraries and patched
+NIF dependencies into the same `rtems/5` prefix. It reuses compatible Rust build
+artifacts and does not rebuild the C SDK. Parallel C/RTEMS, BSP, BLAS and Rust
+builds use the available CPU count by default. `NUMCORE=2` optionally limits
+compilation parallelism on memory-constrained hosts.
+After rebuilding the C toolchain, run `make rust-support` again before using Rust
+NIFs. Replacing the C toolchain invalidates the installed Rust capability markers.
+
+With `ccache` installed, use `make install USE_CCACHE=1` to cache host C and
+C++ compilations in RSB and `make rust-support USE_CCACHE=1` to cache LLVM
+compilations. CMake 3.17 or newer reads the launcher when it first configures
+LLVM. Use `RUST_REBUILD=1` once if enabling the cache in an existing Rust build
+directory. The regular `ccache` configuration controls its location and size.
+Set `RSB_SOURCE_CACHE` to an absolute directory to share downloaded sources
+between builds. RSB checks the archives against the current recipe hashes.
+
+Build the default C SDK image with `make docker-build`. To include Rust, use:
+
+```sh
+make docker-build RUST_SUPPORT=1
+# Or select your own image tag:
+docker build --build-arg RUST_SUPPORT=1 \
+  -t grisp/grisp2-rtems-toolchain:local-rust .
+```
+
+Add `USE_CCACHE=1` to the local Docker target to reuse compiler objects. Docker
+keeps compiler objects and downloaded archives in a BuildKit cache mount.
+
+Release, manual and repository-dispatch image builds enable Rust automatically
+for both `linux/amd64` and `linux/arm64`. Source pins are checked before the
+build. Each final runtime image must pass SDK
+relocation, host Rust execution and offline ARM NIF compilation checks before
+its architecture tag is pushed. The release tag and `latest` multi-architecture
+manifest are published after both architectures succeed. The image check uses
+no Erlang installation; ordinary local Docker builds retain the optional Rust
+setting shown above.
+
+The Docker workflow can also run from `master` with publication disabled to
+validate a requested ref and populate the shared cache for future releases.
+Native SDK archives published to S3 from `master` also include Rust and pass
+the installed SDK check before packaging. Pull request CI runs the same native
+Rust build and checks before a change can merge.
+
+An Erlang project selects the directory or Rust-enabled image under its existing
+`grisp.build.toolchain` configuration. No additional Rust tool paths are needed:
+
+```erlang
+{toolchain, [{directory, "/path/to/grisp2-rtems-toolchain/rtems/5"}]}.
+% Alternatively: {toolchain, [{docker, "grisp/grisp2-rtems-toolchain:local-rust"}]}.
+```
+
+Rust NIF support currently targets GRiSP2. The C SDK still supports both IMX7 and
+ATSAMV. Rust recipe maintenance and validation are described in
+[external/rtems-rust/README.md](external/rtems-rust/README.md).
 
 ## How to Start an Application
 
