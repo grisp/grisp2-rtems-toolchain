@@ -2,14 +2,12 @@
 
 FROM debian:bookworm AS build-stage
 
-ARG RUST_SUPPORT=0
-ARG NUMCORE
-
 RUN apt-get update && apt-get install -y \
     build-essential flex bison cmake texinfo device-tree-compiler git \
     u-boot-tools lzop libusb-1.0-0-dev python3 python-is-python3 \
     unzip libpython3-dev python3-dev locales curl ninja-build pkg-config \
-    libssl-dev libcurl4-openssl-dev zlib1g-dev xz-utils
+    libssl-dev libcurl4-openssl-dev zlib1g-dev xz-utils ccache \
+    && rm -rf /var/lib/apt/lists/*
 
 # https://devel.rtems.org/ticket/4726
 RUN echo "en_US.ISO-8859-15 ISO-8859-15" >> /etc/locale.gen \
@@ -18,13 +16,24 @@ ENV LANG=en_US.iso885915
 
 WORKDIR /grisp2-rtems-toolchain
 COPY . .
-RUN case "$RUST_SUPPORT" in \
+ARG RUST_SUPPORT=0
+ARG USE_CCACHE=0
+ARG NUMCORE
+RUN --mount=type=cache,target=/var/cache/grisp-build,sharing=locked \
+    case "$RUST_SUPPORT" in \
         0|1) ;; \
         *) echo "RUST_SUPPORT must be 0 or 1" >&2; exit 1 ;; \
-    esac && set -- && \
-    if [ -n "$NUMCORE" ]; then set -- "NUMCORE=$NUMCORE"; fi && \
+    esac && \
+    export CCACHE_DIR=/var/cache/grisp-build/ccache CCACHE_MAXSIZE=2G \
+           RSB_SOURCE_CACHE=/var/cache/grisp-build/sources && \
+    set -- "USE_CCACHE=$USE_CCACHE" && \
+    if [ "$USE_CCACHE" = 1 ]; then ccache --zero-stats; fi && \
+    if [ -n "$NUMCORE" ]; then set -- "$@" "NUMCORE=$NUMCORE"; fi && \
     make "$@" install && \
-    if [ "$RUST_SUPPORT" = 1 ]; then make "$@" rust-support; fi
+    if [ "$USE_CCACHE" = 1 ]; then ccache --show-stats --verbose && ccache --zero-stats; fi && \
+    if [ "$RUST_SUPPORT" = 1 ]; then make "$@" rust-support; fi && \
+    if [ "$USE_CCACHE" = 1 ] && [ "$RUST_SUPPORT" = 1 ]; then ccache --show-stats --verbose; fi && \
+    rm -rf -- build external .git
 
 # ------------------------------------------------------------------------------
 

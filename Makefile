@@ -29,7 +29,7 @@ RUST_SUPPORT ?= 0
 RUST_RSB_FLAGS ?= --no-clean
 RUST_RSB_CONFIGDIR = $(SRC_RTEMS_RUST)/config:$(RSB)/source-builder/config:$(RSB)/bare/config:$(RSB)/rtems/config
 RUST_RSB_PATCHDIR = $(SRC_RTEMS_RUST)/patches:$(RSB)/source-builder/patches:$(RSB)/bare/patches:$(RSB)/rtems/patches
-RUST_RSB = $(RSB)/source-builder/sb-set-builder --topdir=$(BUILD_RUST) --prefix=$(PREFIX) --configdir=$(RUST_RSB_CONFIGDIR) --patchdir=$(RUST_RSB_PATCHDIR) --with-rust-project=$(SRC_RTEMS_RUST) --with-rust-c-prefix=$(RUST_C_PREFIX) --with-rust-jobs=$(NUMCORE) --jobs=$(NUMCORE) $(RUST_RSB_FLAGS)
+RUST_RSB = $(RSB)/source-builder/sb-set-builder --topdir=$(BUILD_RUST) --prefix=$(PREFIX) --configdir=$(RUST_RSB_CONFIGDIR) --patchdir=$(RUST_RSB_PATCHDIR) --with-rust-project=$(SRC_RTEMS_RUST) --with-rust-c-prefix=$(RUST_C_PREFIX) --with-rust-jobs=$(NUMCORE) --jobs=$(NUMCORE) $(call rsb_sources,rust) $(RUST_RSB_FLAGS)
 RUST_INPUTS = $(wildcard $(SRC_RTEMS_RUST)/config/* $(SRC_RTEMS_RUST)/config/rust/* $(SRC_RTEMS_RUST)/config/grisp2/* $(SRC_RTEMS_RUST)/patches/*) $(filter-out %/__pycache__,$(wildcard $(SRC_RTEMS_RUST)/tools/*)) $(SRC_RTEMS_RUST)/sources.json $(MAKEFILE_DIR)/Makefile
 RUST_STATE = python3 $(SRC_RTEMS_RUST)/tools/build-state --build-root=$(BUILD_RUST) --prefix=$(PREFIX) --c-prefix=$(RUST_C_PREFIX) --c-target=$(TARGET)
 RUST_CORE_INSTALLED = $(PREFIX)/share/rtems/rust-support.json
@@ -62,6 +62,31 @@ endef
 export BUILDINFO_ERL
 
 UNAME := $(shell uname -s)
+
+USE_CCACHE ?= 0
+rsb_sources = $(if $(RSB_SOURCE_CACHE),--sourcedir="$(RSB_SOURCE_CACHE)/$(1)")
+
+ifeq ($(USE_CCACHE),1)
+export GRISP_CCACHE := $(shell command -v ccache)
+ifeq ($(GRISP_CCACHE),)
+$(error USE_CCACHE=1 requires ccache on PATH)
+endif
+# Re-evaluate include search paths so newly added headers invalidate a cache hit.
+export CCACHE_NODIRECT := 1
+ifeq ($(UNAME),Darwin)
+# /usr/bin/cc and /usr/bin/c++ are shims for the selected Xcode toolchain.
+export CCACHE_COMPILERCHECK ?= %compiler% --version
+else
+export CCACHE_COMPILERCHECK ?= content
+endif
+RSB_CCACHE_DIR := $(BUILD_LOGS)/ccache
+RSB_CCACHE_PREP := rsb-ccache
+RSB_CCACHE_ARGS := --macros="$(RSB_CCACHE_DIR)/compilers.mc"
+RSB_HOST_CC := $(if $(filter Darwin,$(UNAME)),/usr/bin/cc,gcc)
+RSB_HOST_CXX := $(if $(filter Darwin,$(UNAME)),/usr/bin/c++,g++)
+RUST_CCACHE_ENV := CMAKE_C_COMPILER_LAUNCHER="/bin/sh;$(MAKEFILE_DIR)src/ccache-launcher.sh" \
+	CMAKE_CXX_COMPILER_LAUNCHER="/bin/sh;$(MAKEFILE_DIR)src/ccache-launcher.sh"
+endif
 
 # macOS and FreeBSD
 ifneq (,$(filter $(UNAME),Darwin FreeBSD))
@@ -135,7 +160,7 @@ $(BUILD_RUST)/inputs.json: rust-force
 $(RUST_CORE_INSTALLED): $(BUILD_RUST)/inputs.json $(RUST_INPUTS) $(RUST_FORCE)
 	mkdir -p $(BUILD_RUST)
 	rust_reuse=$$($(RUST_STATE) reuse-option $(if $(RUST_FORCE),--fresh)) && \
-		cd $(BUILD_RUST) && $(RUST_RSB) $$rust_reuse --log=$(BUILD_RUST)/core.log grisp2/grisp2-rust-tools.bset
+		cd $(BUILD_RUST) && $(RUST_CCACHE_ENV) $(RUST_RSB) $$rust_reuse --log=$(BUILD_RUST)/core.log grisp2/grisp2-rust-tools.bset
 
 #H Build or update the bundler and NIF source payload against the Rust SDK.
 rust-nif-support: $(RUST_NIF_INSTALLED)
@@ -167,12 +192,13 @@ bootstrap:
 
 .PHONY: toolchain
 #H Build and install the toolchain.
-toolchain:
+toolchain: $(RSB_CCACHE_PREP)
 	mkdir -p $(BUILD_LOGS)
 	rm -rf $(RSB)/rtems/build
 	@$(UNQUARANTINE_CMD)
 	cd $(RSB)/rtems && ../source-builder/sb-set-builder \
 	    --prefix=$(PREFIX) --jobs=$(NUMCORE) \
+	    $(RSB_CCACHE_ARGS) $(call rsb_sources,c) \
 	    --log=$(BUILD_LOGS)/rsb-toolchain.log \
 		--with-fortran \
 	    $(RTEMS_VERSION)/rtems-$(ARCH)
@@ -180,6 +206,17 @@ toolchain:
 	rm -rf $(RSB)/rtems/build
 	# Rebuild std before advertising Rust support for a replaced C SDK.
 	rm -f $(RUST_CORE_INSTALLED) $(RUST_NIF_INSTALLED)
+
+ifeq ($(USE_CCACHE),1)
+.PHONY: rsb-ccache
+rsb-ccache:
+	mkdir -p "$(RSB_CCACHE_DIR)"
+	printf '%s\n' '#!/bin/sh' 'exec "$$GRISP_CCACHE" $(RSB_HOST_CC) "$$@"' > "$(RSB_CCACHE_DIR)/cc"
+	printf '%s\n' '#!/bin/sh' 'exec "$$GRISP_CCACHE" $(RSB_HOST_CXX) "$$@"' > "$(RSB_CCACHE_DIR)/c++"
+	chmod +x "$(RSB_CCACHE_DIR)/cc" "$(RSB_CCACHE_DIR)/c++"
+	printf "%s\n" "__cc: exe, required, '$(RSB_CCACHE_DIR)/cc'" \
+		"__cxx: exe, required, '$(RSB_CCACHE_DIR)/c++'" > "$(RSB_CCACHE_DIR)/compilers.mc"
+endif
 
 .PHONY: toolchain-revision
 #H Create toolchain revision files
@@ -458,10 +495,10 @@ AR='$(MAKEFILE_DIR)rtems/$(RTEMS_VERSION)/$(ARCH)-rtems$(RTEMS_VERSION)/bin/ar'
 #H Build the BLAS-LAPACKE library.
 blas:
 	cp external/BLAS/make.inc $(SRC_BLAS)
-	cd $(SRC_BLAS) && make blaslib $(BLAS_TOOLS)
-	cd $(SRC_BLAS) && make cblaslib $(BLAS_TOOLS)
-	cd $(SRC_BLAS) && make lapacklib $(BLAS_TOOLS)
-	cd $(SRC_BLAS) && make lapackelib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && $(MAKE) -j$(NUMCORE) blaslib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && $(MAKE) -j$(NUMCORE) cblaslib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && $(MAKE) -j$(NUMCORE) lapacklib $(BLAS_TOOLS)
+	cd $(SRC_BLAS) && $(MAKE) -j$(NUMCORE) lapackelib $(BLAS_TOOLS)
 	cd $(SRC_BLAS) &&\
 		$(AR) -x librefblas.a &&\
 		$(AR) -x libcblas.a &&\
@@ -500,7 +537,7 @@ package:
 .PHONY: docker-build
 #H Build the toolchain with tag 'local'
 docker-build:
-	docker build --build-arg RUST_SUPPORT=$(RUST_SUPPORT) --build-arg NUMCORE=$(NUMCORE) -t grisp/grisp2-rtems-toolchain:local .
+	docker build --build-arg RUST_SUPPORT=$(RUST_SUPPORT) --build-arg USE_CCACHE=$(USE_CCACHE) --build-arg NUMCORE=$(NUMCORE) -t grisp/grisp2-rtems-toolchain:local .
 
 .PHONY: docker-build-push
 #H Build the toolchain with the given tag and push it, for example 'make docker-build-push TAG=latest'
@@ -509,4 +546,4 @@ docker-build-push:
 		echo "Error: TAG is not set. Usage: make docker-build-push TAG=<tag>"; \
 		exit 1; \
 	fi
-	docker build --build-arg RUST_SUPPORT=$(RUST_SUPPORT) --build-arg NUMCORE=$(NUMCORE) -t grisp/grisp2-rtems-toolchain:$(TAG) --push .
+	docker build --build-arg RUST_SUPPORT=1 --build-arg USE_CCACHE=$(USE_CCACHE) --build-arg NUMCORE=$(NUMCORE) -t grisp/grisp2-rtems-toolchain:$(TAG) --push .
