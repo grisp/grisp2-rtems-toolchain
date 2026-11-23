@@ -73,7 +73,7 @@ jobs:
         run: |
           ccache --zero-stats
           make install USE_CCACHE=1
-          ccache --show-stats --verbose
+          ccache --show-stats --verbose | tee build/ccache-toolchain.txt
           if [ "$RUNNER_OS" == "Linux" ]; then
             make barebox
           fi
@@ -116,8 +116,10 @@ jobs:
           "$SDK_CHECK_PYTHON" external/rtems-rust/tests/check-inputs.py
           ccache --zero-stats
           make rust-support USE_CCACHE=1
-          ccache --show-stats --verbose
-          # The checker copies the whole SDK. Release the bootstrap scratch space first.
+          ccache --show-stats --verbose | tee build/ccache-rust.txt
+          # Keep the RSB logs when freeing bootstrap scratch space for the checker.
+          mv build/rust/core.log build/rust-core.log
+          mv build/rust/nif.log build/rust-nif.log
           rm -rf -- build/rust
           check_dir=$(mktemp -d "$RUNNER_TEMP/grisp-rust-check.XXXXXX")
           trap 'chmod -R u+w "$check_dir" && rm -rf -- "$check_dir"' EXIT
@@ -134,6 +136,20 @@ jobs:
           path: |
             package/*
             external/rtems-source-builder/rtems/rsb-report-*.txt
+      - name: Upload build diagnostics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: build-diagnostics-${{ runner.os }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/ccache-*.txt
+            build/rsb-toolchain.log
+            build/rust-core.log
+            build/rust-nif.log
+            build/rust/*.log
 
   upload:
     permissions:
