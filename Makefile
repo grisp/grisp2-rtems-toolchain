@@ -17,6 +17,8 @@ SRC_LIBGRISP = $(MAKEFILE_DIR)/external/libgrisp
 SRC_LIBINIH = $(MAKEFILE_DIR)/external/libinih
 SRC_BAREBOX = $(MAKEFILE_DIR)/external/barebox
 SRC_OPENOCD = $(MAKEFILE_DIR)/external/openocd-code
+SRC_OPENOCD_JIMTCL = $(MAKEFILE_DIR)/vendor/openocd/jimtcl-a77ef1a6218fad4c928ddbdc03c1aedc41007e70.tar.gz
+OPENOCD_JIMTCL_REV = a77ef1a6218fad4c928ddbdc03c1aedc41007e70
 SRC_IMX_USB_LOADER = $(MAKEFILE_DIR)/external/imx_usb_loader
 SRC_CRYPTOAUTHLIB = $(MAKEFILE_DIR)/external/cryptoauthlib
 SRC_BLAS = $(MAKEFILE_DIR)/external/lapack
@@ -39,6 +41,7 @@ BUILD_BSP = $(MAKEFILE_DIR)/build/b-$(BSP)
 BUILD_BSP_GRISP1 = $(MAKEFILE_DIR)/build/b-$(BSP_GRISP1)
 BUILD_LOGS = $(MAKEFILE_DIR)/build
 BUILD_OPENOCD = $(MAKEFILE_DIR)/build/b-openocd
+BUILD_OPENOCD_SRC = $(BUILD_OPENOCD)/src
 LIBBSD_BUILDSET = $(MAKEFILE_DIR)/src/libbsd.ini
 CMAKE_TOOLCHAIN_TEMPLATE = $(MAKEFILE_DIR)/cryptoauthlib/grisp2-toolchain.cmake.in
 CMAKE_TOOLCHAIN_CONFIG = $(PREFIX)/share/grisp2-toolchain.cmake
@@ -327,9 +330,18 @@ endif
 openocd:
 	# Note: Use a hack to _not_ use the RTEMS tools environment. The RTEMS
 	# aclocal version isn't compatible with OpenOCD
-	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" ./bootstrap
-	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" ./configure --prefix="$(PREFIX)" \
+	rm -rf $(BUILD_OPENOCD)
+	mkdir -p $(BUILD_OPENOCD_SRC)
+	test "$$(git -C $(SRC_OPENOCD) ls-tree HEAD jimtcl | awk '{print $$3}')" = "$(OPENOCD_JIMTCL_REV)" || { printf '%s\n' "OpenOCD's pinned Jim Tcl revision does not match the vendored source" >&2; exit 1; }
+	git -C $(SRC_OPENOCD) archive --format=tar HEAD > $(BUILD_OPENOCD)/openocd.tar
+	tar -xf $(BUILD_OPENOCD)/openocd.tar -C $(BUILD_OPENOCD_SRC)
+	rm $(BUILD_OPENOCD)/openocd.tar
+	mkdir -p $(BUILD_OPENOCD_SRC)/jimtcl
+	tar -xzf $(SRC_OPENOCD_JIMTCL) --strip-components=1 -C $(BUILD_OPENOCD_SRC)/jimtcl
+	cd $(BUILD_OPENOCD_SRC) && PATH="$(ORGPATH)" ./bootstrap nosubmodule
+	cd $(BUILD_OPENOCD) && PATH="$(ORGPATH)" ./src/configure --prefix="$(PREFIX)" \
 	    --enable-ftdi \
+	    --disable-internal-libjaylink \
 	    --disable-stlink \
 	    --disable-ti-icdi \
 	    --disable-ulink \
@@ -364,7 +376,7 @@ openocd:
 	    --disable-minidriver-dummy \
 	    --disable-remote-bitbang \
 	    --disable-werror
-	cd $(SRC_OPENOCD) && PATH="$(ORGPATH)" make -j$(NUMCORE) install
+	cd $(BUILD_OPENOCD) && PATH="$(ORGPATH)" make -j$(NUMCORE) install
 
 .PHONY: imx_uart
 #H Build the imx_uart tool for loading a bootloader
