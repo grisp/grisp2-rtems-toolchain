@@ -12,7 +12,7 @@ jobs:
   build:
     permissions:
       contents: read
-    timeout-minutes: 150
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -34,6 +34,14 @@ jobs:
               flex \
               bison \
               cmake \
+              ccache \
+              curl \
+              ninja-build \
+              pkg-config \
+              libssl-dev \
+              libcurl4-openssl-dev \
+              zlib1g-dev \
+              xz-utils \
               texinfo \
               device-tree-compiler \
               u-boot-tools \
@@ -45,15 +53,27 @@ jobs:
               python3-dev
           elif [ "$RUNNER_OS" == "macOS" ]; then
             brew install python dtc u-boot-tools texinfo
-            brew install autoconf automake libtool pkg-config
+            brew install autoconf automake libtool pkg-config ccache ninja openssl
           else
             echo "$RUNNER_OS not supported"
             exit 1
           fi
+      - name: Cache compiler results and RSB downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/grisp-native-cache
+          key: grisp-native-v1-${{ matrix.os }}-${{ runner.arch }}-${{ github.sha }}
+          restore-keys: grisp-native-v1-${{ matrix.os }}-${{ runner.arch }}-
       - name: Build toolchain
         shell: bash
+        env:
+          CCACHE_DIR: ${{ runner.temp }}/grisp-native-cache/ccache
+          CCACHE_MAXSIZE: 2G
+          RSB_SOURCE_CACHE: ${{ runner.temp }}/grisp-native-cache/sources
         run: |
-          make install
+          ccache --zero-stats
+          make install USE_CCACHE=1
+          ccache --show-stats --verbose | tee build/ccache-toolchain.txt
           if [ "$RUNNER_OS" == "Linux" ]; then
             make barebox
           fi
@@ -79,15 +99,57 @@ jobs:
         shell: bash
         run: |
           make imx_uart
+      - name: Set up Python for Rust SDK checks
+        id: sdk-check-python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+          update-environment: false
+      - name: Build and validate Rust before packaging
+        shell: bash
+        env:
+          CCACHE_DIR: ${{ runner.temp }}/grisp-native-cache/ccache
+          CCACHE_MAXSIZE: 2G
+          RSB_SOURCE_CACHE: ${{ runner.temp }}/grisp-native-cache/sources
+          SDK_CHECK_PYTHON: ${{ steps.sdk-check-python.outputs.python-path }}
+        run: |
+          "$SDK_CHECK_PYTHON" external/rtems-rust/tests/check-inputs.py
+          ccache --zero-stats
+          make rust-support USE_CCACHE=1
+          ccache --show-stats --verbose | tee build/ccache-rust.txt
+          # Keep the RSB logs when freeing bootstrap scratch space for the checker.
+          mv build/rust/core.log build/rust-core.log
+          mv build/rust/nif.log build/rust-nif.log
+          rm -rf -- build/rust
+          check_dir=$(mktemp -d "$RUNNER_TEMP/grisp-rust-check.XXXXXX")
+          trap 'chmod -R u+w "$check_dir" && rm -rf -- "$check_dir"' EXIT
+          "$SDK_CHECK_PYTHON" external/rtems-rust/tests/check-installed.py \
+            --prefix "$PWD/rtems/5" --c-prefix "$PWD/rtems/5" \
+            --output "$check_dir" --skip-host-nifs
       - name: Create package
         run: make package
       - name: Upload package artifact
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: package-${{ runner.os }}
+          compression-level: 0
           path: |
             package/*
             external/rtems-source-builder/rtems/rsb-report-*.txt
+      - name: Upload build diagnostics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: build-diagnostics-${{ runner.os }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/ccache-*.txt
+            build/rsb-toolchain.log
+            build/rust-core.log
+            build/rust-nif.log
+            build/rust/*.log
 
   upload:
     permissions:

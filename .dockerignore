@@ -1,0 +1,18 @@
+# Keep Git metadata: make install initializes submodules and records the revision.
+build/
+rtems/
+package/
+external/rtems-source-builder/rtems/build/
+external/rtems-source-builder/rtems/sources/
+external/rtems-source-builder/rtems/tar/
+external/rtems-source-builder/rtems/logs/
+external/rtems-source-builder/rtems/rsb-report-*
+external/rtems-libbsd/build/
+external/cryptoauthlib/build/
+external/cryptoauthlib/install/
+fdt/b-dtb/
+demo/b-imx7/
+demo/b-atsamv/
+**/__pycache__/
+**/*.pyc
+rsb-report-*
